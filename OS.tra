@@ -1,0 +1,28 @@
+*** Creating Trace Output File 'OS.tra' Ok.
+### Preparing for ADS-LD.
+### Creating ADS-LD Command Line
+### List of Objects: adding '"startup_lpc17xx.o"'
+### List of Objects: adding '"system_lpc17xx.o"'
+### List of Objects: adding '"main.o"'
+### List of Objects: adding '"uart_polling.o"'
+### List of Objects: adding '"memory.o"'
+### List of Objects: adding '"pcb.o"'
+### List of Objects: adding '"priority.o"'
+### List of Objects: adding '"process.o"'
+### List of Objects: adding '"scheduler.o"'
+### ADS-LD Command completed:
+--cpu Cortex-M3 "startup_lpc17xx.o" "system_lpc17xx.o" "main.o" "uart_polling.o" "memory.o" "pcb.o" "priority.o" "process.o" "scheduler.o" 
+--strict --scatter "OS.sct" 
+--summary_stderr --info summarysizes --map --xref --callgraph --symbols 
+--info sizes --info totals --info unused --info veneers 
+ --list ".\OS.map" -o OS.axf### Preparing Environment (PrepEnvAds)
+### ADS-LD Output File: 'OS.axf'
+### ADS-LD Command File: 'OS.lnp'
+### Checking for dirty Components...
+### Creating CmdFile 'OS.lnp', Handle=0x000007C4
+### Writing '.lnp' file
+### ADS-LD Command file 'OS.lnp' is ready.
+### ADS-LD: About to start ADS-LD Thread.
+### ADS-LD: executed with 0 errors
+### Updating obj list
+### LDADS_file() completed.

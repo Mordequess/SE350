@@ -1,0 +1,5 @@
+--cpu Cortex-M3 "startup_lpc17xx.o" "system_lpc17xx.o" "main.o" "uart_polling.o" "memory.o" "pcb.o" "priority.o" "process.o" "scheduler.o" 
+--strict --scatter "OS.sct" 
+--summary_stderr --info summarysizes --map --xref --callgraph --symbols 
+--info sizes --info totals --info unused --info veneers 
+ --list ".\OS.map" -o OS.axf
