@@ -1,6 +1,7 @@
 #include "scheduler.h"
+#include "rtx.h"
 
-int release_processor() {
+int k_release_processor() {
 
 /*
 1. Set current process to state ready
