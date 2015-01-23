@@ -1,67 +1,5 @@
 #include "memory.h"
 
-void *request_memory_block(void) {
-	/* PROVIDED_PSEUDOCODE
-	atomic ( on ) ;
-	while ( no memory block is available ) {
-		put PCB on blocked_resource_q ;
-		set process state to BLOCKED_ON_RESOURCE ;
-		release_processor ( ) ;
-	}
-	int mem_blk = next free block ;
-	update the heap ;
-	atomic ( off ) ;
-	return mem_blk ;
-	*/
-	
-	return 0; //compiler warning. Replace later
-
-}
-	
-int release_memory_block(void *memory_block) {
-	
-	/* PROVIDED PSEUDOCODE
-	atomic ( on ) ;
-	if ( memory block pointer is not valid )
-		return ERROR_CODE ;
-	put memory_block into heap ;
-	if ( blocked on resource q not empty ) {
-		handle_process_ready ( pop ( blocked resource q ) ) ;
-	}
-	atomic ( off ) ;
-	return SUCCESS_CODE ;
-	*/
-	
-	return 0; //to compile
-}
-
-/* TAKEN FROM SE350 GITHUB */
-/* ----- Global Variables ----- */
-unsigned int *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
-               /* The first stack starts at the RAM high address */
-	       /* stack grows down. Fully decremental stack */
-
-/**
- * @brief: allocate stack for a process, align to 8 bytes boundary
- * @param: size, stack size in bytes
- * @return: The top of the stack (i.e. high address)
- * POST:  gp_stack is updated.
- */
-
-unsigned int *alloc_stack(unsigned int size_b) 
-{
-	unsigned int *sp;
-	sp = gp_stack; /* gp_stack is always 8 bytes aligned */
-	
-	/* update gp_stack */
-	gp_stack = (unsigned int *)((unsigned char *)sp - size_b);
-	
-	/* 8 bytes alignement adjustment to exception stack frame */
-	if ((unsigned int)gp_stack & 0x04) {
-		--gp_stack; 
-	}
-	return sp;
-}
 
 /**
  * @brief: Initialize RAM as follows:
@@ -88,6 +26,35 @@ unsigned int *alloc_stack(unsigned int size_b)
           |                           |
 0x10000000+---------------------------+ Low Address
 */
+
+/* ----- Global Variables ----- */
+heap_blk heap_Head;
+pcb **gp_pcbs;
+unsigned int *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
+												/* The first stack starts at the RAM high address */
+												/* stack grows down. Fully decremental stack */
+
+/**
+ * @brief: allocate stack for a process, align to 8 bytes boundary
+ * @param: size, stack size in bytes
+ * @return: The top of the stack (i.e. high address)
+ * POST:  gp_stack is updated.
+ */
+
+unsigned int *alloc_stack(unsigned int size_b) 
+{
+	unsigned int *sp;
+	sp = gp_stack; /* gp_stack is always 8 bytes aligned */
+	
+	/* update gp_stack */
+	gp_stack = (unsigned int *)((unsigned char *)sp - size_b);
+	
+	/* 8 bytes alignement adjustment to exception stack frame */
+	if ((unsigned int)gp_stack & 0x04) {
+		--gp_stack; 
+	}
+	return sp;
+}
 
 void memory_init(void)
 {
@@ -127,9 +94,64 @@ void memory_init(void)
   
 	/* allocate memory for heap, not implemented yet*/
 	
+	//heap fixed start and end address found in memory.h
+	heap_Head.start_Addr = HEAP_START_ADDR;
+	heap_Head.next_Addr = 0; //TODO: have null declared
+	heap_Head.length = HEAP_START_ADDR - HEAP_END_ADDR;
+	
+	
 	// so at this point, gp_stack is pointing to where
 	// the heap starts - (right?)
 	// and also then, we know that p_end is pointing to where the heap ends
 }
+void *request_memory_block(void) {
+	/* PROVIDED_PSEUDOCODE
+	atomic ( on ) ;
+	while ( no memory block is available ) {
+		put PCB on blocked_resource_q ;
+		set process state to BLOCKED_ON_RESOURCE ;
+		release_processor ( ) ;
+	}
+	int mem_blk = next free block ;
+	update the heap ;
+	atomic ( off ) ;
+	return mem_blk ;
+	*/
+	void* mem_blk;
+	int blockSize = 128;
+	
+	heap_blk* heap = &heap_Head; //start at the top of the heap by making a pointer to heap_Head
+	while (heap->length < blockSize) {
+		if (heap->next_Addr == 0) return 0; //if this is last free block, the request cant be filled
+		//TODO: have null declared
+		else heap = (heap_blk*)heap->next_Addr; //cast unsigned int as heap_blk pointer
+	}
+	
+	mem_blk = (void*)(heap->start_Addr + heap->length - blockSize);
+	heap->length -= blockSize;
+	
+	return mem_blk;
+	
+	//case: requested block is entire free space block
+	//		must remove this free space block from linked list (probably. length 0 will not satisfy and requests)
 
-/* TAKEN FROM SE350 GITHUB */
+}
+	
+int release_memory_block(void *memory_block) {
+	
+	/* PROVIDED PSEUDOCODE
+	atomic ( on ) ;
+	if ( memory block pointer is not valid )
+		return ERROR_CODE ;
+	put memory_block into heap ;
+	if ( blocked on resource q not empty ) {
+		handle_process_ready ( pop ( blocked resource q ) ) ;
+	}
+	atomic ( off ) ;
+	return SUCCESS_CODE ;
+	*/
+	
+	
+	
+	return 0;
+}
