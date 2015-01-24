@@ -1,7 +1,7 @@
 #include <LPC17xx.h>
 #include "uart_polling.h"
 #include "rtx.h"
-#include "memory.h"
+#include "k_memory.h"
 
 int main() {
 	
