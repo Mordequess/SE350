@@ -1,4 +1,4 @@
-#include "memory.h"
+#include "k_memory.h"
 
 #ifdef DEBUG_0
 #include "printf.h"

@@ -15,8 +15,9 @@
 
 #include <LPC17xx.h>
 #include <system_LPC17xx.h>
-#include "uart_polling.h"
 #include "k_process.h"
+#include "uart_polling.h"
+#include "rtx.h"
 
 #ifdef DEBUG_0
 #include "printf.h"

@@ -43,12 +43,14 @@ typedef struct pcb
 } pcb;
 
 /* initialization table item */
+/*
 typedef struct proc_init
 {	
-	int m_pid;	        /* process id */ 
-	int m_priority;         /* initial priority, not used in this example. */ 
-	int m_stack_size;       /* size of stack in words */
-	void (*mpf_start_pc) ();/* entry point of the process */    
+	int m_pid;	        
+	int m_priority;         
+	int m_stack_size;       
+	void (*mpf_start_pc) ();  
 } PROC_INIT;
+*/
 
 #endif // ! K_RTX_H_
