@@ -15,6 +15,15 @@
 #define LOW     2
 #define LOWEST  3
 
+/*Process IDs*/
+#define PID_NULL 0
+#define PID_P1   1
+#define PID_P2   2
+#define PID_P3   3
+#define PID_P4   4
+#define PID_P5   5
+#define PID_P6   6
+
 /* ----- Types ----- */
 typedef unsigned int U32;
 

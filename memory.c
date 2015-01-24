@@ -1,6 +1,11 @@
 #include "memory.h"
 
-void *request_memory_block(void) {
+#ifdef DEBUG_0
+#include "printf.h"
+#endif /* ! DEBUG_0 */
+
+
+void *k_request_memory_block(void) {
 	/* PROVIDED_PSEUDOCODE
 	atomic ( on ) ;
 	while ( no memory block is available ) {
@@ -18,7 +23,7 @@ void *request_memory_block(void) {
 
 }
 	
-int release_memory_block(void *memory_block) {
+int k_release_memory_block(void *memory_block) {
 	
 	/* PROVIDED PSEUDOCODE
 	atomic ( on ) ;

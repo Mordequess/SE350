@@ -8,26 +8,26 @@
 #ifndef K_RTX_H_
 #define K_RTX_H_
 
-/*----- Definitations -----*/
+/*----- Definitions -----*/
 
 #define RTX_ERR -1
 #define RTX_OK  0
 
 #define NULL 0
-#define NUM_TEST_PROCS 2
+#define NUM_TEST_PROCS 6
 
 #ifdef DEBUG_0
 #define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
 #else
-#define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
+#define USR_SZ_STACK 0x100         /* user proc stack size 256B  */
 #endif /* DEBUG_0 */
 
 /*----- Types -----*/
 typedef unsigned char U8;
 typedef unsigned int U32;
 
-/* process states, note we only assume three states in this example */
-typedef enum {NEW = 0, RDY, RUN} PROC_STATE_E;  
+/* process states */
+typedef enum {NEW = 0, READY, RUNNING, BLOCKED} PROC_STATE_E;  
 
 /*
   PCB data structure definition.
@@ -40,7 +40,7 @@ typedef struct pcb
 	U32 *mp_sp;		/* stack pointer of the process */
 	U32 m_pid;		/* process id */
 	PROC_STATE_E m_state;   /* state of the process */      
-} PCB;
+} pcb;
 
 /* initialization table item */
 typedef struct proc_init
