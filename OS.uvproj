@@ -422,29 +422,24 @@
               <FilePath>.\uart_polling.c</FilePath>
             </File>
             <File>
-              <FileName>memory.c</FileName>
+              <FileName>usr_proc.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\memory.c</FilePath>
+              <FilePath>.\usr_proc.c</FilePath>
             </File>
             <File>
-              <FileName>pcb.c</FileName>
+              <FileName>k_rtx_init.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\pcb.c</FilePath>
+              <FilePath>.\k_rtx_init.c</FilePath>
             </File>
             <File>
-              <FileName>priority.c</FileName>
+              <FileName>k_process.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\priority.c</FilePath>
+              <FilePath>.\k_process.c</FilePath>
             </File>
             <File>
-              <FileName>process.c</FileName>
+              <FileName>k_memory.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\process.c</FilePath>
-            </File>
-            <File>
-              <FileName>scheduler.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\scheduler.c</FilePath>
+              <FilePath>.\k_memory.c</FilePath>
             </File>
           </Files>
         </Group>
