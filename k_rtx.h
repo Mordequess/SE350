@@ -26,7 +26,7 @@
 typedef unsigned char U8;
 typedef unsigned int U32;
 
-/* process states */
+/* process states (no need for an EXIT state) */
 typedef enum {NEW = 0, READY, RUNNING, BLOCKED} PROC_STATE_E;  
 
 /*
@@ -39,7 +39,8 @@ typedef struct pcb
 	//struct pcb *mp_next;  /* next pcb, not used in this example */  
 	U32 *mp_sp;		/* stack pointer of the process */
 	U32 m_pid;		/* process id */
-	PROC_STATE_E m_state;   /* state of the process */      
+	PROC_STATE_E m_state;   /* state of the process */  
+	U32 m_priority;
 } pcb;
 
 /* initialization table item */

@@ -26,4 +26,10 @@ extern U32 *alloc_stack(U32 size_b);   /* allocate stack for a process */
 extern void __rte(void);               /* pop exception stack frame */
 extern void set_test_procs(void);      /* test process initial set up */
 
+int get_process_priority(int);
+int set_process_priority(int, int);
+void null_process(void);
+
+pcb *get_pcb_pointer_from_process_id(int);
+
 #endif /* ! K_PROCESS_H_ */

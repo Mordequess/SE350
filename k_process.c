@@ -73,18 +73,20 @@ void process_init()
 
 pcb *scheduler(void)
 {
+	//No process currently running
 	if (gp_current_process == NULL) {
-		gp_current_process = gp_pcbs[0]; 
-		return gp_pcbs[0];
+		//Choose process with highest priority off the queue and return
 	}
 
-	if ( gp_current_process == gp_pcbs[0] ) {
-		return gp_pcbs[1];
-	} else if ( gp_current_process == gp_pcbs[1] ) {
-		return gp_pcbs[0];
-	} else {
-		return NULL;
-	}
+	//If process is running, find something to swap it with
+	//...
+	
+	
+	//If nothing is suitable, choose the null process
+	
+	
+	//return NULL if error happens.
+	return NULL;
 }
 
 /*@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
@@ -97,7 +99,16 @@ pcb *scheduler(void)
  */
 int process_switch(pcb *p_pcb_old) 
 {
+	
+	
+	
+	
+	
 	return RTX_OK; //get rid of compiler warning
+	
+	
+	
+	
 	
 	//THE CODE BELOW IS THE GITHUB CODE.
 	/*
@@ -145,48 +156,83 @@ int k_release_processor(void)
 3. process switch invokes scheduler and context-switches to the
 new process
 	*/
-	return RTX_OK;
 	
-	
-	
-	
-	
-	
-	
-	
-	//ORIGINAL CODE
-	/*
-	PCB *p_pcb_old = NULL;
-	
-	p_pcb_old = gp_current_process;
+	pcb *p_pcb_old = gp_current_process;
 	gp_current_process = scheduler();
 	
-	if ( gp_current_process == NULL  ) {
-		gp_current_process = p_pcb_old; // revert back to the old process
+	//If scheduler returned NULL, we have an error.
+	//Keep currently running process the same.
+	if (gp_current_process == NULL) {
+		gp_current_process = p_pcb_old;
 		return RTX_ERR;
 	}
-        if ( p_pcb_old == NULL ) {
+	
+	//If no process was running to begin with, set to current
+	if (p_pcb_old == NULL) {
 		p_pcb_old = gp_current_process;
 	}
+	
+	//Switch process. The function knows both the old and new process
 	process_switch(p_pcb_old);
 	return RTX_OK;
-	*/
+	
 }
-
 
 //Null process
 void null_process() {
 	while (1) {
-		k_release_processor() ;
+		k_release_processor();
 	}
 }
 
 //Priority setter
 int set_process_priority(int process_id, int priority) {
-	return 0;
+	
+	pcb* p_pcb_param = get_pcb_pointer_from_process_id(process_id);
+	
+	//Valid priority values are {0, 1, 2, 3}, with 3 being LOWEST
+	if (priority < HIGH || priority > LOWEST) {
+		return RTX_ERR;
+	}
+	
+	//Only processes 1-6 can have their priorities set
+	if (process_id < PID_P1 || process_id > PID_P6) {
+		return RTX_ERR;
+	}
+	
+	//Null check on pointer
+	if (p_pcb_param == NULL) {
+		return RTX_ERR;
+	}
+	
+	p_pcb_param->m_priority = priority;
+	
+	return RTX_OK;
 }
 
 //Priority getter
 int get_process_priority(int process_id) {
-	return 0;
+		
+	pcb* p_pcb_param = get_pcb_pointer_from_process_id(process_id);
+	
+	//For invalid process_id out of range, manual says to return -1 (RTX_ERR)
+	if (process_id > PID_P6 || process_id < PID_P1) {
+		return RTX_ERR;
+	}
+
+	//Null check on pointer
+	if (p_pcb_param == NULL) {
+		return RTX_ERR;
+	}
+	
+	return p_pcb_param->m_priority;
+}
+
+// ------------------- API ENDS HERE ------------------------------------------
+
+// ----------- HELPER FUNCTIONS BEGIN HERE ------------------------------------
+
+pcb *get_pcb_pointer_from_process_id(int process_id) {
+	
+	return NULL; //change later
 }
