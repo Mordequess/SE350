@@ -33,7 +33,7 @@
 /* ----- Global Variables ----- */
 heap_blk heap_Head;
 //pcb **gp_pcbs;
-unsigned int *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
+U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
 												/* The first stack starts at the RAM high address */
 												/* stack grows down. Fully decremental stack */
 
@@ -44,16 +44,16 @@ unsigned int *gp_stack; /* The last allocated stack low address. 8 bytes aligned
  * POST:  gp_stack is updated.
  */
 
-unsigned int *alloc_stack(unsigned int size_b) 
+U32 *alloc_stack(U32 size_b) 
 {
-	unsigned int *sp;
+	U32 *sp;
 	sp = gp_stack; /* gp_stack is always 8 bytes aligned */
 	
 	/* update gp_stack */
-	gp_stack = (unsigned int *)((unsigned char *)sp - size_b);
+	gp_stack = (U32 *)((unsigned char *)sp - size_b);
 	
 	/* 8 bytes alignement adjustment to exception stack frame */
-	if ((unsigned int)gp_stack & 0x04) {
+	if ((U32)gp_stack & 0x04) {
 		--gp_stack; 
 	}
 	return sp;
@@ -64,8 +64,8 @@ void memory_init(void)
 	//p_end is going to point to the end of the heap once all is allocated
 	unsigned char *p_end = (unsigned char *)&Image$$RW_IRAM1$$ZI$$Limit;
 	int i;
-	unsigned int *p1_sp;
-	unsigned int *p2_sp;
+	U32 *p1_sp;
+	U32 *p2_sp;
   
 	/* 4 bytes padding */
 	p_end += 4;
@@ -90,8 +90,8 @@ void memory_init(void)
 	p1_sp = alloc_stack(512);
 	p2_sp = alloc_stack(512);
 	
-	gp_stack = (unsigned int *)RAM_END_ADDR;
-	if ((unsigned int)gp_stack & 0x04) { /* 8 bytes alignment */
+	gp_stack = (U32 *)RAM_END_ADDR;
+	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
 		--gp_stack; 
 	}
   
@@ -99,7 +99,7 @@ void memory_init(void)
 	
 	//heap fixed start and end address found in memory.h
 	heap_Head.start_Addr = HEAP_START_ADDR;
-	heap_Head.next_Addr = 0; //TODO: have null declared
+	heap_Head.next_Addr = NULL;
 	heap_Head.length = HEAP_START_ADDR - HEAP_END_ADDR;
 	
 	
@@ -121,17 +121,17 @@ void *k_request_memory_block(void) {
 	return mem_blk ;
 	*/
 	void* mem_blk;
-	int blockSize = 128;
+	
+	// BLOCK_SIZE = 0x80 (128)
 	
 	heap_blk* heap = &heap_Head; //start at the top of the heap by making a pointer to heap_Head
-	while (heap->length < blockSize) {
-		if (heap->next_Addr == 0) return 0; //if this is last free block, the request cant be filled
-		//TODO: have null declared
-		else heap = (heap_blk*)heap->next_Addr; //cast unsigned int as heap_blk pointer
+	while (heap->length < BLOCK_SIZE) {
+		if (heap->next_Addr == 0) return NULL; //if this is last free block, the request can't be filled
+		else heap = (heap_blk*)heap->next_Addr; //cast U32 as heap_blk pointer
 	}
 	
-	mem_blk = (void*)(heap->start_Addr + heap->length - blockSize);
-	heap->length -= blockSize;
+	mem_blk = (void*)(heap->start_Addr + heap->length - BLOCK_SIZE);
+	heap->length -= BLOCK_SIZE;
 	
 	return mem_blk;
 	
