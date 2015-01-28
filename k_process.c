@@ -27,6 +27,9 @@
 pcb **gp_pcbs;                  /* array of pcbs */
 pcb *gp_current_process = NULL; /* always point to the current RUN process */
 
+queue g_ready_queue[NUM_PRIORITIES];
+queue g_blocked_queue;
+
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_TEST_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
