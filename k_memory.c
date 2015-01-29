@@ -13,12 +13,12 @@
           |        Padding            |
           |---------------------------|<--- gp_pcbs
           |        PCB pointers       |
-		  |---------------------------|
+					|---------------------------|
           |        PCB 1              |
           |---------------------------|
           |        PCB 2              |
           |---------------------------|
-		  |		space for more PCBs	  |
+					|		space for more PCBs	    |
           |---------------------------|<--- HEAP_START_ADDR
           |                           |
           |        HEAP               |
@@ -68,16 +68,20 @@ void memory_init(void)
 	int i;
 	U32 *p1_sp;
 	U32 *p2_sp;
-  
+  heap_blk* heap_Head;
+	
 	/* 4 bytes padding */
 	p_end += 4;
 
 	/* allocate memory for pcb pointers   */
-	// 2 since there are 2 test processes
+	// 6 since there are 6 test processes
 	gp_pcbs = (pcb **)p_end;
-	p_end += 2 * sizeof(pcb *);
+	p_end += 6 * sizeof(pcb *);
   
-	//2 again for number of test processes
+	//TODO:
+	//initialize queues here
+	
+	//6 again for number of test processes
 	for ( i = 0; i < 2; i++ ) {
 		gp_pcbs[i] = (pcb *)p_end;
 		p_end += sizeof(pcb); 
@@ -98,7 +102,7 @@ void memory_init(void)
 	}
   
 	//allocate memory for heap
-	heap_blk* heap_Head = (heap_blk*)HEAP_START_ADDR;
+	heap_Head = (heap_blk*)HEAP_START_ADDR;
 	heap_Head->next_Addr = NULL;
 	heap_Head->length = HEAP_END_ADDR - HEAP_START_ADDR - sizeof(heap_blk *); //length in heap_Head adjusts for header, others won't
 }
@@ -128,7 +132,7 @@ void *k_request_memory_block(void) {
 	
 	//update free space list
 	freeNode->length -= BLOCK_SIZE;
-	if (freeNode->length == 0 && freeNode != HEAP_START_ADDR) {
+	if (freeNode->length == 0 && freeNode != (heap_blk*)HEAP_START_ADDR) {
 		temp = (heap_blk*)HEAP_START_ADDR;
 		while (freeNode != (heap_blk*)(temp->next_Addr)) {
 			temp = (heap_blk*)(temp->next_Addr); 
@@ -142,7 +146,7 @@ void *k_request_memory_block(void) {
 }
 	
 int k_release_memory_block(void *memory_block) {
-	temp = HEAP_START_ADDR;
+	heap_blk* temp = (heap_blk*)HEAP_START_ADDR;
 
 	__disable_irq(); //atomic(on);
 
@@ -161,19 +165,19 @@ int k_release_memory_block(void *memory_block) {
 		}
 		//if immediately after free space, increase above node
 		if ((U32)memory_block == (U32)temp + temp->length) {
-			temp->length += BLOCK_SIZE;
+			temp->length += (U32)BLOCK_SIZE;
 		}
 		//else create a node, set "next"
 		else {
-			(heap_blk*)memory_block->length = 0x80;
-			(heap_blk*)memory_block->next_Addr = temp->next_Addr;
+			((heap_blk*)memory_block)->length = (U32)BLOCK_SIZE;
+			((heap_blk*)memory_block)->next_Addr = temp->next_Addr;
 			temp->next_Addr = (U32)memory_block;
 		}
 	}
 	//if a free space node immediately follows, delete that one and steal its "next", increase length
 	if (temp->next_Addr != NULL && temp->next_Addr == (U32)temp + temp->length) {
-		temp->length += (heap_blk*)(temp->next_Addr)->length;
-		temp->next_Addr = (heap_blk*)(temp->next_Addr)->next_Addr;
+		temp->length += ((heap_blk*)(temp->next_Addr))->length;
+		temp->next_Addr = ((heap_blk*)(temp->next_Addr))->next_Addr;
 	}
 
 
