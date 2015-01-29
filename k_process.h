@@ -31,5 +31,8 @@ int set_process_priority(int, int);
 void null_process(void);
 
 pcb *get_pcb_pointer_from_process_id(int);
+pcb* get_next_ready_process(void);
+pcb* get_next_blocked_process(void);
+U32 is_a_more_important_process_ready(pcb* currentProcess);
 
 #endif /* ! K_PROCESS_H_ */

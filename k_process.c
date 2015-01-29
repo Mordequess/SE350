@@ -27,8 +27,8 @@
 pcb **gp_pcbs;                  /* array of pcbs */
 pcb *gp_current_process = NULL; /* always point to the current RUN process */
 
-queue g_ready_queue[NUM_PRIORITIES];
-queue g_blocked_queue;
+queue g_ready_queue[NUM_PRIORITIES];	/* Ready queue */
+queue g_blocked_queue[NUM_PRIORITIES];	/* Blocked queue */
 
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_TEST_PROCS];
@@ -42,8 +42,11 @@ void process_init()
 {
 	int i;
 	U32 *sp;
+	
+	//TODO: need to initialize null process and add to gp_pcb
+	
   
-        /* fill out the initialization table */
+  /* fill out the initialization table */
 	set_test_procs();
 	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
@@ -78,14 +81,11 @@ pcb *scheduler(void)
 {
 	//No process currently running
 	if (gp_current_process == NULL) {
-		//Choose process with highest priority off the queue and return
+		//return null process
 	}
 
 	//If process is running, find something to swap it with
 	//...
-	
-	
-	//If nothing is suitable, choose the null process
 	
 	
 	//return NULL if error happens.
@@ -184,6 +184,7 @@ new process
 //Null process
 void null_process() {
 	while (1) {
+		printf("Inside null process");
 		k_release_processor();
 	}
 }
@@ -191,7 +192,8 @@ void null_process() {
 //Priority setter
 int set_process_priority(int process_id, int priority) {
 	
-	pcb* p_pcb_param = get_pcb_pointer_from_process_id(process_id);
+	pcb* pcb_modified_process = get_pcb_pointer_from_process_id(process_id);
+	U32 oldPriority = pcb_modified_process->m_priority;
 	
 	//Valid priority values are {0, 1, 2, 3}, with 3 being LOWEST
 	if (priority < HIGH || priority > LOWEST) {
@@ -204,11 +206,27 @@ int set_process_priority(int process_id, int priority) {
 	}
 	
 	//Null check on pointer
-	if (p_pcb_param == NULL) {
+	if (pcb_modified_process == NULL) {
 		return RTX_ERR;
 	}
 	
-	p_pcb_param->m_priority = priority;
+	//Since priority has changed, we need to move the process to another queue.
+	//There will be different queues depending on whether it is ready or blocked
+	if (pcb_modified_process->m_state == READY) {
+		queue_node *processNode = remove_queue_node(&g_ready_queue[oldPriority], pcb_modified_process);
+		enqueue(&g_ready_queue[priority], processNode);
+	} else if (pcb_modified_process->m_state == BLOCKED) {
+		queue_node *processNode = remove_queue_node(&g_blocked_queue[oldPriority], pcb_modified_process);
+		enqueue(&g_blocked_queue[priority], processNode);
+	}
+	
+	pcb_modified_process->m_priority = priority;
+	
+	//Since priority was modified, we may need to pre-empt
+	//If a ready process now has higher priority than the current one, then release processor
+	if (is_a_more_important_process_ready(pcb_modified_process)) {
+		k_release_processor();
+	}
 	
 	return RTX_OK;
 }
@@ -238,4 +256,46 @@ int get_process_priority(int process_id) {
 pcb *get_pcb_pointer_from_process_id(int process_id) {
 	
 	return NULL; //change later
+}
+
+//Returns the ready process highest on the priority queue
+pcb* get_next_ready_process(void) {
+	int i;
+	for (i = 0; i < NUM_PRIORITIES; i++) {
+		if (!is_empty(&g_ready_queue[i])) {
+			queue_node *procNode = g_ready_queue[i].head;
+			return (pcb*)procNode->contents;
+		}
+	}
+	
+	//Should never get down here
+	//If nothing is ready, null process should run once we reach priority 4.
+}
+
+//Returns the highest-priority process that is currently blocked on memory
+pcb* get_next_blocked_process(void) {
+	int i;
+	for (i = 0; i < NUM_PRIORITIES; i++) {
+		if (!is_empty(&g_blocked_queue[i])) {
+			queue_node *procNode = g_blocked_queue[i].head;
+			return (pcb*)procNode->contents;
+		}
+	}
+	
+	//No blocked processes anywhere. Just return null.
+	return NULL;
+}
+
+//Returns 1 if there exists a ready process more important
+// than the one currently running.
+U32 is_a_more_important_process_ready(pcb* currentProcess) {
+	U32 currentPriority = currentProcess->m_priority;
+	
+	int i;
+	for (i = 0; i < currentPriority; i++) {
+		if (!is_empty(&g_ready_queue[i])) {
+			return 1;
+		}
+	}
+	return 0;
 }

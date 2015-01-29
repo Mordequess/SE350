@@ -55,6 +55,7 @@ typedef struct queue {
 
 void enqueue(queue*, queue_node*);
 queue_node* dequeue(queue*);
+queue_node* remove_queue_node(queue*, void*);
 U32 is_empty(queue*);
 
 /* ----- RTX User API ----- */
