@@ -63,13 +63,11 @@ U32 *alloc_stack(U32 size_b)
 
 void memory_init(void)
 {
+	
 	//p_end is going to point to the end of the heap once all is allocated
 	unsigned char *p_end = (unsigned char *)&Image$$RW_IRAM1$$ZI$$Limit;
 	int i;
-	U32 *p1_sp;
-	U32 *p2_sp;
   heap_blk* heap_Head;
-	
 	/* 4 bytes padding */
 	p_end += 4;
 
@@ -92,9 +90,6 @@ void memory_init(void)
 #endif
 	
 	/* prepare for alloc_stack() to allocate memory for stacks */
-	
-	p1_sp = alloc_stack(512);
-	p2_sp = alloc_stack(512);
 	
 	gp_stack = (U32 *)RAM_END_ADDR;
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */

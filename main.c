@@ -20,7 +20,7 @@ int main() {
 	#endif /* DEBUG_0 */
 	
 	/* start the RTX and built-in processes */
-	rtx_init();  
+	k_rtx_init();  
 	
 	return RTX_ERR;
 
