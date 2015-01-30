@@ -30,6 +30,8 @@ pcb *gp_current_process = NULL; /* always point to the current RUN process */
 queue g_ready_queue[NUM_PRIORITIES];	/* Ready queue */
 queue g_blocked_queue[NUM_PRIORITIES];	/* Blocked queue */
 
+queue_node* g_queue_nodes[NUM_PROCESSES];
+
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_TEST_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
@@ -299,3 +301,23 @@ U32 is_a_more_important_process_ready(pcb* currentProcess) {
 	}
 	return 0;
 }
+
+//For a given PCB, returns its associated queue_node
+queue_node* get_queue_node_for_process(pcb* proc) {
+	
+	int pid = proc->m_pid;
+	
+	if (pid >= 0 && pid <= 6) {
+		return g_queue_nodes[pid];
+	} else {
+		return NULL;
+	}
+	
+}
+
+void block_current_process(void) {
+	gp_current_process->m_state = BLOCKED;
+	enqueue(&g_blocked_queue[gp_current_process->m_priority], get_queue_node_for_process(gp_current_process));
+	k_release_processor();
+}
+

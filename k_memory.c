@@ -1,4 +1,5 @@
 #include "k_memory.h"
+#include "k_process.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -113,10 +114,7 @@ void *k_request_memory_block(void) {
 	//find the next free space large enough to fulfill the request
 	while (freeNode->length < BLOCK_SIZE) {
 		if (freeNode->next_Addr == 0){ //if this is last free node, the request can't be filled
-			//TODO:
-			//put PCB on blocked_resource_q ;
-			//set process state to BLOCKED_ON_RESOURCE ;
-			//release_processor ( ) ;
+			block_current_process(); //will release processor
 			return NULL; 
 		}
 		else freeNode = (heap_blk*)(freeNode->next_Addr); //cast U32 as a heap_blk pointer to iterate through the linked list

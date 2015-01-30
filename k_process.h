@@ -11,6 +11,7 @@
 #define K_PROCESS_H_
 
 #include "k_rtx.h"
+#include "rtx.h"
 
 /* ----- Definitions ----- */
 
@@ -34,5 +35,8 @@ pcb *get_pcb_pointer_from_process_id(int);
 pcb* get_next_ready_process(void);
 pcb* get_next_blocked_process(void);
 U32 is_a_more_important_process_ready(pcb* currentProcess);
+queue_node* get_queue_node_for_process(pcb* proc);
+
+void block_current_process(void);
 
 #endif /* ! K_PROCESS_H_ */
