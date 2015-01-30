@@ -10,6 +10,9 @@
 #ifndef K_PROCESS_H_
 #define K_PROCESS_H_
 
+#include <LPC17xx.h>
+#include <system_LPC17xx.h>
+#include "uart_polling.h"
 #include "k_rtx.h"
 #include "rtx.h"
 

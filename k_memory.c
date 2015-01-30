@@ -75,13 +75,13 @@ void memory_init(void)
 	/* allocate memory for pcb pointers   */
 	// 6 since there are 6 test processes
 	gp_pcbs = (pcb **)p_end;
-	p_end += 6 * sizeof(pcb *);
+	p_end += NUM_TEST_PROCS * sizeof(pcb *);
   
 	//TODO:
 	//initialize queues here
+	//~ ??? is it?
 	
-	//6 again for number of test processes
-	for ( i = 0; i < 2; i++ ) {
+	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		gp_pcbs[i] = (pcb *)p_end;
 		p_end += sizeof(pcb); 
 	}

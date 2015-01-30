@@ -13,11 +13,8 @@
  *       the limitations. 
  */
 
-#include <LPC17xx.h>
-#include <system_LPC17xx.h>
 #include "k_process.h"
-#include "uart_polling.h"
-#include "rtx.h"
+
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -47,6 +44,7 @@ void process_init()
 	
 	//TODO: need to initialize null process and add to gp_pcb
 	
+	//~ local variables to help with debugging
   
   /* fill out the initialization table */
 	set_test_procs();
@@ -81,9 +79,16 @@ void process_init()
 
 pcb *scheduler(void)
 {
+	//~KELLY~
+	//~ this needs to return a pcb, and ideally not the same pcb as before - 
+	//~ but basically under no circumstances to do we want it to return NULL
+	//~ otherwise we won't get any processes running
+	//~ so  we need to know about where the pcbs are living
+	
 	//No process currently running
 	if (gp_current_process == NULL) {
-		//return null process
+		return gp_pcbs[0];
+		//return null process pcb poitner
 	}
 
 	//If process is running, find something to swap it with
@@ -104,19 +109,7 @@ pcb *scheduler(void)
  */
 int process_switch(pcb *p_pcb_old) 
 {
-	
-	
-	
-	
-	
-	return RTX_OK; //get rid of compiler warning
-	
-	
-	
-	
-	
 	//THE CODE BELOW IS THE GITHUB CODE.
-	/*
 	PROC_STATE_E state;
 	
 	state = gp_current_process->m_state;
@@ -145,7 +138,6 @@ int process_switch(pcb *p_pcb_old)
 		} 
 	}
 	return RTX_OK;
-	*/
 }
 /**
  * @brief release_processor(). 
@@ -154,8 +146,7 @@ int process_switch(pcb *p_pcb_old)
  */
 int k_release_processor(void)
 {
-	
-	/*
+	/* GITHUB CODE
 1. Set current process to state ready
 2. rpq enqueue(current process) put current process in ready queues
 3. process switch invokes scheduler and context-switches to the
@@ -169,7 +160,7 @@ new process
 	//Keep currently running process the same.
 	if (gp_current_process == NULL) {
 		gp_current_process = p_pcb_old;
-		return RTX_ERR;
+		//return RTX_ERR;
 	}
 	
 	//If no process was running to begin with, set to current

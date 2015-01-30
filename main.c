@@ -16,7 +16,7 @@ int main() {
 	
 	#ifdef DEBUG_0
 		init_printf(NULL, uart_put_char);
-		printf("This is working %d", 1);
+		printf("This is working %d\n\r", 1);
 	#endif /* DEBUG_0 */
 	
 	/* start the RTX and built-in processes */
