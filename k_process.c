@@ -321,3 +321,31 @@ void block_current_process(void) {
 	k_release_processor();
 }
 
+//Tells processor to switch to the highest blocked process. It is no longer blocked.
+U32 unblock_and_switch_to_blocked_process(void) {
+	
+	pcb* processToSwitchTo;
+	queue_node *removedNode;
+	
+	processToSwitchTo = get_next_blocked_process();
+	
+	//Does not dequeue. Do a null check first
+	if (processToSwitchTo == NULL) {
+		return RTX_ERR; //no blocked processes. This function should not have been called
+	}
+	
+	//remove from queue
+	removedNode = dequeue(&g_blocked_queue[processToSwitchTo->m_priority]);
+	
+	//The chosen process and the dequeued one should be the same.
+	if (removedNode->contents != processToSwitchTo) {
+		return RTX_ERR;
+	}
+	
+	//set as next process to run, bypassing the scheduler()
+	gp_current_process = processToSwitchTo;
+	
+	process_switch(processToSwitchTo);
+	
+	return RTX_OK;
+}

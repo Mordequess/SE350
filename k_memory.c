@@ -173,15 +173,14 @@ int k_release_memory_block(void *memory_block) {
 		temp->next_Addr = ((heap_blk*)(temp->next_Addr))->next_Addr;
 	}
 
-
-	//TODO:
-	//if ( "blocked on resource" q not empty ) {
-	//	handle_process_ready ( pop ( blocked resource q ) ) ;
-	//}
+	//If we have blocked processes, we can now unblock one.
+	if (get_next_blocked_process() != NULL) {
+		unblock_and_switch_to_blocked_process();
+	}
 
 	__enable_irq(); //atomic(off);
 	
-	return 0;
+	return RTX_OK;
 }
 
 
