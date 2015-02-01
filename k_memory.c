@@ -1,5 +1,4 @@
 #include "k_memory.h"
-#include "k_process.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -26,7 +25,7 @@
           |                           |
           |---------------------------|<--- HEAP_END_ADDR
           |	   space for more stacks  |
-          |---------------------------|<--- gp_stack 
+          |---------------------------|<--- gp_stack
           |    Proc 2 STACK           |
           |...........................|          
           |    Proc 1 STACK           |
@@ -35,10 +34,11 @@
 */
 
 /* ----- Global Variables ----- */
-//pcb **gp_pcbs;
-U32 *gp_stack;	/* The last allocated stack low address. 8 bytes aligned */
-				/* The first stack starts at the RAM high address */
-				/* stack grows down. Fully decremental stack */
+// pcb **gp_pcbs; //~ commented since it's in k_process.c
+U32 *gp_stack;
+/* The last allocated stack low address. 8 bytes aligned */
+/* The first stack starts at the RAM high address */
+/* stack grows down. Fully decremental stack */
 
 /**
  * @brief: allocate stack for a process, align to 8 bytes boundary
@@ -47,6 +47,7 @@ U32 *gp_stack;	/* The last allocated stack low address. 8 bytes aligned */
  * POST:  gp_stack is updated.
  */
 
+// the hardcoded stack size is STACK_SIZE = 0x100 or 256 U32s which means 256 x 4 bytes = 1024 bytes
 U32 *alloc_stack(U32 size_b) 
 {
 	U32 *sp;
@@ -69,6 +70,7 @@ void memory_init(void)
 	unsigned char *p_end = (unsigned char *)&Image$$RW_IRAM1$$ZI$$Limit;
 	int i;
   heap_blk* heap_Head;
+	U8 stack_total;
 	/* 4 bytes padding */
 	p_end += 4;
 
@@ -88,19 +90,24 @@ void memory_init(void)
 #ifdef DEBUG_0  
 	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
 	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
+	printf("stack_total w/U8: 0x%x\n", ((U8)NUM_TEST_PROCS*STACK_SIZE));
+	printf("stack_total w/U32: 0x%x\n", ((U32)NUM_TEST_PROCS*STACK_SIZE));
 #endif
 	
 	/* prepare for alloc_stack() to allocate memory for stacks */
-	
+	stack_total = (U8)NUM_TEST_PROCS*STACK_SIZE; // i think this calculation is correct based on debug output above
 	gp_stack = (U32 *)RAM_END_ADDR;
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
 		--gp_stack; 
 	}
   
 	//allocate memory for heap
-	heap_Head = (heap_blk*)HEAP_START_ADDR;
+
+	//~ using p_end, we're taking out the reliance on the macro. (i'm on a dislike macros rave)
+	heap_Head = (heap_blk*)p_end;
 	heap_Head->next_Addr = NULL;
-	heap_Head->length = HEAP_END_ADDR - HEAP_START_ADDR - sizeof(heap_blk *); //length in heap_Head adjusts for header, others won't
+	heap_Head->length = (RAM_END_ADDR-stack_total-(U32)p_end - sizeof(heap_blk); //length in heap_Head adjusts for header, others won't
+	//~ this new calculation takes into account some space for the process stacks. (and the size of a heap block)
 }
 
 void *k_request_memory_block(void) {

@@ -43,7 +43,6 @@ void process_init()
 	U32 *sp;
 	
 	//TODO: need to initialize null process and add to gp_pcb
-	
 	//~ local variables to help with debugging
   
   /* fill out the initialization table */
@@ -79,27 +78,23 @@ void process_init()
 
 pcb *scheduler(void)
 {
-	//~KELLY~
-	//~ this needs to return a pcb, and ideally not the same pcb as before - 
-	//~ but basically under no circumstances to do we want it to return NULL
-	//~ otherwise we won't get any processes running
-	//~ so  we need to know about where the pcbs are living
 	
 	//No process currently running
 	if (gp_current_process == NULL) {
 		return gp_pcbs[0];
-		//return null process pcb poitner
+		//~return first process pcb - right now, this is testproc 1
 	}
 
 	//If process is running, find something to swap it with
 	//...
 	
-	
+	//~ we should probably return the pcb for the null process, really
 	//return NULL if error happens.
 	return NULL;
 }
 
-/*@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
+/*
+ *@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
  *@param: p_pcb_old, the old pcb that was in RUN
  *@return: RTX_OK upon success
  *         RTX_ERR upon failure
@@ -110,6 +105,7 @@ pcb *scheduler(void)
 int process_switch(pcb *p_pcb_old) 
 {
 	//THE CODE BELOW IS THE GITHUB CODE.
+	pcb *curr = gp_current_process; // for debug
 	PROC_STATE_E state;
 	
 	state = gp_current_process->m_state;
@@ -153,8 +149,8 @@ int k_release_processor(void)
 new process
 	*/
 	
-	pcb *p_pcb_old = gp_current_process;
-	gp_current_process = scheduler();
+	pcb *p_pcb_old = gp_current_process; // initially this is NULL
+	gp_current_process = scheduler(); // this now becomes pcbs[0]
 	
 	//If scheduler returned NULL, we have an error.
 	//Keep currently running process the same.
@@ -169,7 +165,7 @@ new process
 	}
 	
 	//Switch process. The function knows both the old and new process
-	process_switch(p_pcb_old);
+	process_switch(gp_current_process); //~ why do we switch to the old process and not the new one?
 	return RTX_OK;
 	
 }

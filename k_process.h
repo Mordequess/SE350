@@ -14,11 +14,14 @@
 #include <system_LPC17xx.h>
 #include "uart_polling.h"
 #include "k_rtx.h"
+#include "k_memory.h"
 #include "rtx.h"
+
 
 /* ----- Definitions ----- */
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
+#define STACK_SIZE 0x100               /* stack size hardcoded as 0x100 in usr_proc */
 
 /* ----- Functions ----- */
 
