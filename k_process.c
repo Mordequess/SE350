@@ -165,7 +165,7 @@ new process
 	}
 	
 	//Switch process. The function knows both the old and new process
-	process_switch(gp_current_process); //~ why do we switch to the old process and not the new one?
+	process_switch(p_pcb_old);
 	return RTX_OK;
 	
 }
@@ -244,7 +244,12 @@ int get_process_priority(int process_id) {
 
 pcb *get_pcb_pointer_from_process_id(int process_id) {
 	
-	return NULL; //change later
+	//invalid process_id check
+	if (process_id < 0 || process_id > 6) {
+		return NULL;
+	}
+	
+	return gp_pcbs[process_id];
 }
 
 //Returns the ready process highest on the priority queue
@@ -312,9 +317,11 @@ void block_current_process(void) {
 U32 unblock_and_switch_to_blocked_process(void) {
 	
 	pcb* processToSwitchTo;
+	pcb* processToSwitchOutOf;
 	queue_node *removedNode;
 	
 	processToSwitchTo = get_next_blocked_process();
+	processToSwitchOutOf = gp_current_process;
 	
 	//Does not dequeue. Do a null check first
 	if (processToSwitchTo == NULL) {
@@ -332,7 +339,7 @@ U32 unblock_and_switch_to_blocked_process(void) {
 	//set as next process to run, bypassing the scheduler()
 	gp_current_process = processToSwitchTo;
 	
-	process_switch(processToSwitchTo);
+	process_switch(processToSwitchOutOf);
 	
 	return RTX_OK;
 }

@@ -18,4 +18,7 @@ extern int k_release_processor(void);
 extern void *k_request_memory_block(void);
 extern int k_release_memory_block(void *);
 
+extern void memory_init(void);
+extern void process_init();
+
 #endif /* ! K_RTX_INIT_H_ */

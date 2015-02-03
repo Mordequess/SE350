@@ -25,6 +25,8 @@
 
 /* ----- Functions ----- */
 
+extern void __rte(void);
+
 void process_init(void);               /* initialize all procs in the system */
 pcb *scheduler(void);                  /* pick the pid of the next to run process */
 int k_release_process(void);           /* kernel release_process function */

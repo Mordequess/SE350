@@ -78,11 +78,7 @@ void memory_init(void)
 	// 6 since there are 6 test processes
 	gp_pcbs = (pcb **)p_end;
 	p_end += NUM_TEST_PROCS * sizeof(pcb *);
-  
-	//TODO:
-	//initialize queues here
-	//~ ??? is it?
-	
+  	
 	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		gp_pcbs[i] = (pcb *)p_end;
 		p_end += sizeof(pcb); 
@@ -100,13 +96,21 @@ void memory_init(void)
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
 		--gp_stack; 
 	}
+	
+	//TODO:
+	//allocate memory for the ready and blocked queues and their contents
+	//...
+	
+	
+	
+	
   
 	//allocate memory for heap
 
 	//~ using p_end, we're taking out the reliance on the macro. (i'm on a dislike macros rave)
 	heap_Head = (heap_blk*)p_end;
 	heap_Head->next_Addr = NULL;
-	heap_Head->length = (RAM_END_ADDR-stack_total-(U32)p_end - sizeof(heap_blk); //length in heap_Head adjusts for header, others won't
+	heap_Head->length = (RAM_END_ADDR-stack_total-(U32)p_end) - sizeof(heap_blk); //length in heap_Head adjusts for header, others won't
 	//~ this new calculation takes into account some space for the process stacks. (and the size of a heap block)
 }
 
@@ -153,6 +157,10 @@ int k_release_memory_block(void *memory_block) {
 	//TODO:
 	//if ( memory block pointer is not valid )
 	//	return ERROR_CODE ;
+	//...
+	
+	
+	
 
 	//special case: memory block is very top of heap
 	if ((U32)memory_block == HEAP_START_ADDR + 4){
@@ -189,10 +197,3 @@ int k_release_memory_block(void *memory_block) {
 	
 	return RTX_OK;
 }
-
-
-//release_processor
-//get/set priority
-//priorty queue to hold PCBs
-//blocked "queue", we insert into the middle
-//can be put on the heap

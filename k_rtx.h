@@ -43,15 +43,4 @@ typedef struct pcb
 	U32 m_priority;
 } pcb;
 
-/* initialization table item */
-/*
-typedef struct proc_init
-{	
-	int m_pid;	        
-	int m_priority;         
-	int m_stack_size;       
-	void (*mpf_start_pc) ();  
-} PROC_INIT;
-*/
-
 #endif // ! K_RTX_H_
