@@ -43,24 +43,6 @@ typedef struct proc_init
 	void (*mpf_start_pc) ();    
 } PROC_INIT;
 
-
-/* -------- QUEUES FOR PROCESSES -------- */
-
-typedef struct queue_node {
-	void* contents;
-	struct queue_node *next;
-} queue_node;
-
-typedef struct queue {
-	queue_node* head;
-	queue_node* tail;
-} queue;
-
-void enqueue(queue*, queue_node*);
-queue_node* dequeue(queue*);
-queue_node* remove_queue_node(queue*, void*);
-U32 is_empty(queue*);
-
 /* ----- RTX User API ----- */
 #define __SVC_0  __svc_indirect(0)
 

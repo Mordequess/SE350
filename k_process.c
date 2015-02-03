@@ -13,11 +13,8 @@
  *       the limitations. 
  */
 
-#include <LPC17xx.h>
-#include <system_LPC17xx.h>
 #include "k_process.h"
-#include "uart_polling.h"
-#include "rtx.h"
+
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -26,11 +23,8 @@
 /* ----- Global Variables ----- */
 pcb **gp_pcbs;                  /* array of pcbs */
 pcb *gp_current_process = NULL; /* always point to the current RUN process */
-
-queue g_ready_queue[NUM_PRIORITIES];	/* Ready queue */
-queue g_blocked_queue[NUM_PRIORITIES];	/* Blocked queue */
-
-queue_node* g_queue_nodes[NUM_PROCESSES];
+pcb* g_ready_queue;				/* Ready queue */
+pcb* g_blocked_queue;			/* Blocked queue */
 
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_TEST_PROCS];
@@ -46,7 +40,7 @@ void process_init()
 	U32 *sp;
 	
 	//TODO: need to initialize null process and add to gp_pcb
-	
+	//~ local variables to help with debugging
   
   /* fill out the initialization table */
 	set_test_procs();
@@ -70,6 +64,12 @@ void process_init()
 		}
 		(gp_pcbs[i])->mp_sp = sp;
 	}
+
+	//set up ready queue with all processes
+	//note: does not change state, they all still count as NEW
+	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+		enqueue(g_ready_queue, gp_pcbs[i]);
+	}
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
@@ -81,20 +81,28 @@ void process_init()
 
 pcb *scheduler(void)
 {
-	//No process currently running
-	if (gp_current_process == NULL) {
-		//return null process
-	}
+	//for loop through gp_pcbs looking for new processes
+	//else 
 
+	//No process currently running (startup only)
+	if (gp_current_process == NULL) {
+		return gp_pcbs[0];
+		//~return first process pcb - right now, this is testproc 1
+	}
+	else if (gp_current_process == gp_pcbs[0]){
+		return gp_pcbs[1];
+	}
+	else return gp_pcbs[0];
+
+	//TODO:
 	//If process is running, find something to swap it with
-	//...
-	
-	
-	//return NULL if error happens.
-	return NULL;
+	//gp_current_process->m_state = READY;
+	//pbc* next = g_ready_queue; //if none are ready, defaults to null process
+	//dequeue(get_queue_node_for_process(next));
 }
 
-/*@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
+/*
+ *@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
  *@param: p_pcb_old, the old pcb that was in RUN
  *@return: RTX_OK upon success
  *         RTX_ERR upon failure
@@ -104,19 +112,7 @@ pcb *scheduler(void)
  */
 int process_switch(pcb *p_pcb_old) 
 {
-	
-	
-	
-	
-	
-	return RTX_OK; //get rid of compiler warning
-	
-	
-	
-	
-	
 	//THE CODE BELOW IS THE GITHUB CODE.
-	/*
 	PROC_STATE_E state;
 	
 	state = gp_current_process->m_state;
@@ -145,7 +141,6 @@ int process_switch(pcb *p_pcb_old)
 		} 
 	}
 	return RTX_OK;
-	*/
 }
 /**
  * @brief release_processor(). 
@@ -154,22 +149,20 @@ int process_switch(pcb *p_pcb_old)
  */
 int k_release_processor(void)
 {
-	
-	/*
+	/* GITHUB CODE
 1. Set current process to state ready
 2. rpq enqueue(current process) put current process in ready queues
 3. process switch invokes scheduler and context-switches to the
 new process
 	*/
-	
-	pcb *p_pcb_old = gp_current_process;
-	gp_current_process = scheduler();
+	pcb *p_pcb_old = gp_current_process; // initially this is NULL
+	gp_current_process = scheduler(); // this now becomes pcbs[0]
 	
 	//If scheduler returned NULL, we have an error.
 	//Keep currently running process the same.
 	if (gp_current_process == NULL) {
 		gp_current_process = p_pcb_old;
-		return RTX_ERR;
+		//return RTX_ERR;
 	}
 	
 	//If no process was running to begin with, set to current
@@ -187,7 +180,7 @@ new process
 void null_process() {
 	while (1) {
 		printf("Inside null process");
-		k_release_processor();
+		release_processor();
 	}
 }
 
@@ -195,7 +188,6 @@ void null_process() {
 int k_set_process_priority(int process_id, int priority) {
 	
 	pcb* pcb_modified_process = get_pcb_pointer_from_process_id(process_id);
-	U32 oldPriority = pcb_modified_process->m_priority;
 	
 	//Valid priority values are {0, 1, 2, 3}, with 3 being LOWEST
 	if (priority < HIGH || priority > LOWEST) {
@@ -215,11 +207,11 @@ int k_set_process_priority(int process_id, int priority) {
 	//Since priority has changed, we need to move the process to another queue.
 	//There will be different queues depending on whether it is ready or blocked
 	if (pcb_modified_process->m_state == READY) {
-		queue_node *processNode = remove_queue_node(&g_ready_queue[oldPriority], pcb_modified_process);
-		enqueue(&g_ready_queue[priority], processNode);
+		remove_queue_node(g_ready_queue, pcb_modified_process);
+		enqueue(g_ready_queue, pcb_modified_process);
 	} else if (pcb_modified_process->m_state == BLOCKED) {
-		queue_node *processNode = remove_queue_node(&g_blocked_queue[oldPriority], pcb_modified_process);
-		enqueue(&g_blocked_queue[priority], processNode);
+		remove_queue_node(g_blocked_queue, pcb_modified_process);
+		enqueue(g_blocked_queue, pcb_modified_process);
 	}
 	
 	pcb_modified_process->m_priority = priority;
@@ -227,7 +219,7 @@ int k_set_process_priority(int process_id, int priority) {
 	//Since priority was modified, we may need to pre-empt
 	//If a ready process now has higher priority than the current one, then release processor
 	if (is_a_more_important_process_ready(pcb_modified_process)) {
-		k_release_processor();
+		release_processor(); //TEMP: changing this from k_release to release out of fear
 	}
 	
 	return RTX_OK;
@@ -253,39 +245,86 @@ int k_get_process_priority(int process_id) {
 
 // ------------------- API ENDS HERE ------------------------------------------
 
+// ------------QUEUE FUNCTIONS ------------------------------------------------
+
+//Add the node to the tail end of the queue
+void enqueue(pcb* queue_Fixed, pcb* element) {
+	pcb* queue = queue_Fixed;
+
+	//check if empty
+	if (is_empty(queue_Fixed)) {
+		queue_Fixed = element;
+		element->mp_next = NULL;
+		return;
+	}
+
+	//compare to first item in queue
+	if (queue_Fixed->m_priority < element->m_priority){
+		element->mp_next = queue_Fixed;
+		queue_Fixed = element;
+		return;
+	}
+
+	//iterate through to find where to insert
+	while (queue->mp_next->m_priority <= element->m_priority) {
+		queue = queue->mp_next;
+	}
+
+	//insert
+	element->mp_next = queue->mp_next;
+	queue->mp_next = element;
+}
+
+//Remove and return a node from the front end of the queue
+pcb* dequeue(pcb* queue) {
+	if (!is_empty(queue)) {
+		pcb* element = queue;
+		queue = queue->mp_next;
+		return element;
+	}
+	return NULL; //null if nothing to dequeue
+}
+
+//Removes a node from the queue, regardless of its position
+//The input parameter asks for the contents and not for the queue_node
+void remove_queue_node(pcb* queue_Fixed, pcb* element) {
+	pcb* queue = queue_Fixed;
+
+	//compare to first item in queue
+	if (queue_Fixed == element){
+		queue_Fixed = queue_Fixed->mp_next;
+	}
+
+	//iterate through to find what to remove
+	while (queue->mp_next != element) {
+		queue = queue->mp_next;
+	}
+
+	//remove
+	queue->mp_next = element->mp_next;
+	element->mp_next = NULL;
+}
+
+//Emptiness check.
+//Will return 1 if empty and 0 if not.
+U32 is_empty(pcb* queue) {
+	if (queue == NULL) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
 // ----------- HELPER FUNCTIONS BEGIN HERE ------------------------------------
 
 pcb *get_pcb_pointer_from_process_id(int process_id) {
 	
-	return NULL; //change later
-}
-
-//Returns the ready process highest on the priority queue
-pcb* get_next_ready_process(void) {
-	int i;
-	for (i = 0; i < NUM_PRIORITIES; i++) {
-		if (!is_empty(&g_ready_queue[i])) {
-			queue_node *procNode = g_ready_queue[i].head;
-			return (pcb*)procNode->contents;
-		}
+	//invalid process_id check
+	if (process_id < 0 || process_id > 6) {
+		return NULL;
 	}
 	
-	//Should never get down here
-	//If nothing is ready, null process should run once we reach priority 4.
-}
-
-//Returns the highest-priority process that is currently blocked on memory
-pcb* get_next_blocked_process(void) {
-	int i;
-	for (i = 0; i < NUM_PRIORITIES; i++) {
-		if (!is_empty(&g_blocked_queue[i])) {
-			queue_node *procNode = g_blocked_queue[i].head;
-			return (pcb*)procNode->contents;
-		}
-	}
-	
-	//No blocked processes anywhere. Just return null.
-	return NULL;
+	return gp_pcbs[process_id];
 }
 
 //Returns 1 if there exists a ready process more important
@@ -302,50 +341,33 @@ U32 is_a_more_important_process_ready(pcb* currentProcess) {
 	return 0;
 }
 
-//For a given PCB, returns its associated queue_node
-queue_node* get_queue_node_for_process(pcb* proc) {
-	
-	int pid = proc->m_pid;
-	
-	if (pid >= 0 && pid <= 6) {
-		return g_queue_nodes[pid];
-	} else {
-		return NULL;
-	}
-	
-}
-
+//called from memory
 void block_current_process(void) {
 	gp_current_process->m_state = BLOCKED;
-	enqueue(&g_blocked_queue[gp_current_process->m_priority], get_queue_node_for_process(gp_current_process));
-	k_release_processor();
+	enqueue(g_blocked_queue, gp_current_process);
+	release_processor();
 }
 
 //Tells processor to switch to the highest blocked process. It is no longer blocked.
-U32 unblock_and_switch_to_blocked_process(void) {
+int unblock_and_switch_to_blocked_process(void) {
 	
 	pcb* processToSwitchTo;
-	queue_node *removedNode;
+	pcb* processToSwitchOutOf;
 	
-	processToSwitchTo = get_next_blocked_process();
+	processToSwitchOutOf = gp_current_process;
 	
 	//Does not dequeue. Do a null check first
-	if (processToSwitchTo == NULL) {
+	if (g_blocked_queue == NULL) {
 		return RTX_ERR; //no blocked processes. This function should not have been called
 	}
 	
 	//remove from queue
-	removedNode = dequeue(&g_blocked_queue[processToSwitchTo->m_priority]);
-	
-	//The chosen process and the dequeued one should be the same.
-	if (removedNode->contents != processToSwitchTo) {
-		return RTX_ERR;
-	}
+	processToSwitchTo = dequeue(g_blocked_queue);
 	
 	//set as next process to run, bypassing the scheduler()
 	gp_current_process = processToSwitchTo;
 	
-	process_switch(processToSwitchTo);
+	process_switch(processToSwitchOutOf);
 	
 	return RTX_OK;
 }
