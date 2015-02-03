@@ -34,11 +34,10 @@
 */
 
 /* ----- Global Variables ----- */
-// pcb **gp_pcbs; //~ commented since it's in k_process.c
 U32 *gp_stack;
-/* The last allocated stack low address. 8 bytes aligned */
-/* The first stack starts at the RAM high address */
-/* stack grows down. Fully decremental stack */
+	/* The last allocated stack low address. 8 bytes aligned */
+	/* The first stack starts at the RAM high address */
+	/* stack grows down. Fully decremental stack */
 
 /**
  * @brief: allocate stack for a process, align to 8 bytes boundary
@@ -68,8 +67,7 @@ void memory_init(void){
 	//p_end is going to point to the end of the heap once all is allocated
 	unsigned char *p_end = (unsigned char *)&Image$$RW_IRAM1$$ZI$$Limit;
 	int i;
-  heap_blk* heap_Head;
-	U8 stack_total;
+	heap_blk* heap_Head;
 	/* 4 bytes padding */
 	p_end += 4;
 
@@ -84,16 +82,19 @@ void memory_init(void){
 	}
 	
 	/* prepare for alloc_stack() to allocate memory for stacks */
-	stack_total = (U8)NUM_TEST_PROCS*STACK_SIZE; // i think this calculation is correct based on debug output above
 	gp_stack = (U32 *)RAM_END_ADDR;
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
 		--gp_stack; 
 	}
 	
-	//TODO:
 	//allocate memory for the ready and blocked queues and their contents
-	//...
-	
+	g_ready_queue = (pcb *)p_end;
+	g_ready_queue = NULL;
+	p_end += sizeof(pcb *);
+
+	g_blocked_queue = (pcb *)p_end;
+	g_blocked_queue = NULL;
+	p_end += sizeof(pcb *);
 	
 	
 	
@@ -103,7 +104,7 @@ void memory_init(void){
 	//~ using p_end, we're taking out the reliance on the macro. (i'm on a dislike macros rave)
 	heap_Head = (heap_blk*)HEAP_START_ADDR; //p_end;
 	heap_Head->next_Addr = NULL;
-	heap_Head->length = HEAP_END_ADDR - HEAP_START_ADDR - sizeof(heap_blk *); //(RAM_END_ADDR-stack_total-(U32)p_end) - sizeof(heap_blk); //length in heap_Head adjusts for header, others won't
+	heap_Head->length = HEAP_END_ADDR - HEAP_START_ADDR - sizeof(heap_blk *); //length in heap_Head adjusts for header, others won't
 	//~ this new calculation takes into account some space for the process stacks. (and the size of a heap block)
 
 #ifdef DEBUG_0  
@@ -194,7 +195,7 @@ int k_release_memory_block(void *memory_block) {
 	}
 
 	//If we have blocked processes, we can now unblock one.
-	if (get_next_blocked_process() != NULL) {
+	if (g_blocked_queue != NULL) {
 		unblock_and_switch_to_blocked_process();
 	}
 

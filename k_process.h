@@ -23,6 +23,13 @@
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
 #define STACK_SIZE 0x100               /* stack size hardcoded as 0x100 in usr_proc */
 
+/* -------- QUEUES FOR PROCESSES -------- */
+
+void enqueue(pcb* queue, pcb* element);
+pcb* dequeue(pcb* queue);
+void remove_queue_node(pcb* queue, pcb* element);
+U32 is_empty(pcb* queue);
+
 /* ----- Functions ----- */
 
 extern void __rte(void);
@@ -40,12 +47,9 @@ int set_process_priority(int, int);
 void null_process(void);
 
 pcb *get_pcb_pointer_from_process_id(int);
-pcb* get_next_ready_process(void);
-pcb* get_next_blocked_process(void);
 U32 is_a_more_important_process_ready(pcb* currentProcess);
-queue_node* get_queue_node_for_process(pcb* proc);
 
 void block_current_process(void);
-U32 unblock_and_switch_to_blocked_process(void);
+int unblock_and_switch_to_blocked_process(void);
 
 #endif /* ! K_PROCESS_H_ */
