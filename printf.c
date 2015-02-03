@@ -241,5 +241,4 @@ void tfp_sprintf(char* s,char *fmt, ...)
 	putcp(&s,0);
 	va_end(va);
 	}
-
 	

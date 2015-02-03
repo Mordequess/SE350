@@ -4,6 +4,8 @@
 #include "k_rtx.h"
 #include "k_process.h"
 
+extern pcb* g_ready_queue;
+extern pcb* g_blocked_queue;
 extern pcb **gp_pcbs;
 extern U32 Image$$RW_IRAM1$$ZI$$Limit;
 
