@@ -456,6 +456,11 @@
               <FileType>1</FileType>
               <FilePath>.\rtx.c</FilePath>
             </File>
+            <File>
+              <FileName>util.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\util.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
