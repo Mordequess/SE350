@@ -192,7 +192,7 @@ void null_process() {
 }
 
 //Priority setter
-int set_process_priority(int process_id, int priority) {
+int k_set_process_priority(int process_id, int priority) {
 	
 	pcb* pcb_modified_process = get_pcb_pointer_from_process_id(process_id);
 	U32 oldPriority = pcb_modified_process->m_priority;
@@ -234,7 +234,7 @@ int set_process_priority(int process_id, int priority) {
 }
 
 //Priority getter
-int get_process_priority(int process_id) {
+int k_get_process_priority(int process_id) {
 		
 	pcb* p_pcb_param = get_pcb_pointer_from_process_id(process_id);
 	
