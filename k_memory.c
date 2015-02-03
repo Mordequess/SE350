@@ -13,17 +13,17 @@
           |        Padding            |
           |---------------------------|<--- gp_pcbs
           |        PCB pointers       |
-					|---------------------------|
+          |---------------------------|
           |        PCB 1              |
           |---------------------------|
           |        PCB 2              |
           |---------------------------|
-					|		space for more PCBs	    |
-          |---------------------------|<--- HEAP_START_ADDR
+          |		space for more PCBs   |
+          |---------------------------|<--- HEAP_START_ADDR (0x10003FFC)
           |                           |
           |        HEAP               |
           |                           |
-          |---------------------------|<--- HEAP_END_ADDR
+          |---------------------------|<--- HEAP_END_ADDR (0x10007200)
           |	   space for more stacks  |
           |---------------------------|<--- gp_stack
           |    Proc 2 STACK           |
@@ -63,8 +63,7 @@ U32 *alloc_stack(U32 size_b)
 	return sp;
 }
 
-void memory_init(void)
-{
+void memory_init(void){
 	
 	//p_end is going to point to the end of the heap once all is allocated
 	unsigned char *p_end = (unsigned char *)&Image$$RW_IRAM1$$ZI$$Limit;
@@ -83,12 +82,6 @@ void memory_init(void)
 		gp_pcbs[i] = (pcb *)p_end;
 		p_end += sizeof(pcb); 
 	}
-#ifdef DEBUG_0  
-	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
-	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
-	printf("stack_total w/U8: 0x%x\n", ((U8)NUM_TEST_PROCS*STACK_SIZE));
-	printf("stack_total w/U32: 0x%x\n", ((U32)NUM_TEST_PROCS*STACK_SIZE));
-#endif
 	
 	/* prepare for alloc_stack() to allocate memory for stacks */
 	stack_total = (U8)NUM_TEST_PROCS*STACK_SIZE; // i think this calculation is correct based on debug output above
@@ -108,10 +101,20 @@ void memory_init(void)
 	//allocate memory for heap
 
 	//~ using p_end, we're taking out the reliance on the macro. (i'm on a dislike macros rave)
-	heap_Head = (heap_blk*)p_end;
+	heap_Head = (heap_blk*)HEAP_START_ADDR; //p_end;
 	heap_Head->next_Addr = NULL;
-	heap_Head->length = (RAM_END_ADDR-stack_total-(U32)p_end) - sizeof(heap_blk); //length in heap_Head adjusts for header, others won't
+	heap_Head->length = HEAP_END_ADDR - HEAP_START_ADDR - sizeof(heap_blk *); //(RAM_END_ADDR-stack_total-(U32)p_end) - sizeof(heap_blk); //length in heap_Head adjusts for header, others won't
 	//~ this new calculation takes into account some space for the process stacks. (and the size of a heap block)
+
+#ifdef DEBUG_0  
+	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
+	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
+	printf("stack total: 0x%x\n", ((U32)(NUM_TEST_PROCS*STACK_SIZE)));
+	printf("heap start addr: 0x%x\n", ((U32)HEAP_START_ADDR));
+	printf("heap end addr: 0x%x\n", ((U32)HEAP_END_ADDR));
+	printf("heap length: 0x%x\n", (heap_Head->length));
+#endif
+
 }
 
 void *k_request_memory_block(void) {
@@ -154,11 +157,13 @@ int k_release_memory_block(void *memory_block) {
 
 	__disable_irq(); //atomic(on);
 
-	//TODO:
-	//if ( memory block pointer is not valid )
-	//	return ERROR_CODE ;
-	//...
-	
+	//check memory block pointer is valid
+	if ( (U32)memory_block < HEAP_START_ADDR + 4
+		|| (U32)memory_block > HEAP_END_ADDR - BLOCK_SIZE
+		// || TODO: 8bit alignment
+		){
+		return RTX_ERR;
+	}
 	
 	
 

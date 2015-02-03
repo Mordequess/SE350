@@ -16,12 +16,8 @@ typedef struct heap_blk {
 } heap_blk;
 
 //heap allocate enough space for X (currently 100) memory blocks + one heap header
-#define HEAP_START_ADDR Image$$RW_IRAM1$$ZI$$Limit 
-#define HEAP_END_ADDR (HEAP_START_ADDR * 100 + sizeof(heap_blk *))
-//~ i can... see how this makes sense... but also given we now know how much space the process stacks should take up...
-//~ just sayin i'd rather use something less arbitrary i guess
-//~ i know i changed HEAP_START_ADDR to this value which is totally stupid of me... but i disliked the previous value so 
-//~ probably worth looking into - oh yeah because it didn't take into account the image limit constant at all.
+#define HEAP_START_ADDR (0x10004000 - sizeof(heap_blk *)) //arbitrarily chosen to leave enough space on either side
+#define HEAP_END_ADDR 0x10007200 //(HEAP_START_ADDR + BLOCK_SIZE * 100 + sizeof(heap_blk *))
 
 void memory_init(void);
 U32 *alloc_stack(U32 size_b);

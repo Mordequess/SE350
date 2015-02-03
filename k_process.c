@@ -148,7 +148,7 @@ int k_release_processor(void)
 3. process switch invokes scheduler and context-switches to the
 new process
 	*/
-	
+	pcb *curr = gp_current_process; //for debug
 	pcb *p_pcb_old = gp_current_process; // initially this is NULL
 	gp_current_process = scheduler(); // this now becomes pcbs[0]
 	
