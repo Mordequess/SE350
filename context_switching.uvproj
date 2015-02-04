@@ -7,7 +7,7 @@
 
   <Targets>
     <Target>
-      <TargetName>HelloWorldSim</TargetName>
+      <TargetName>Context Switching SIM</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
       <TargetOption>
@@ -44,7 +44,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\</OutputDirectory>
-          <OutputName>OS</OutputName>
+          <OutputName>context_switching</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>0</CreateHexFile>
@@ -152,7 +152,7 @@
             <CpuDllArguments></CpuDllArguments>
             <PeripheralDll></PeripheralDll>
             <PeripheralDllArguments></PeripheralDllArguments>
-            <InitializationFile>.\RAM.ini</InitializationFile>
+            <InitializationFile></InitializationFile>
             <Driver>BIN\UL2CM3.DLL</Driver>
           </TargetDlls>
         </DebugOption>
@@ -162,11 +162,11 @@
             <UseExternalTool>0</UseExternalTool>
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
-            <Capability>0</Capability>
-            <DriverSelection>-1</DriverSelection>
+            <Capability>1</Capability>
+            <DriverSelection>4096</DriverSelection>
           </Flash1>
           <Flash2>BIN\UL2CM3.DLL</Flash2>
-          <Flash3></Flash3>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
         </Utilities>
         <TargetArmAds>
@@ -394,7 +394,7 @@
             <File>
               <FileName>startup_LPC17xx.s</FileName>
               <FileType>2</FileType>
-              <FilePath>.\startup_LPC17xx.s</FilePath>
+              <FilePath>.\src\startup_LPC17xx.s</FilePath>
             </File>
           </Files>
         </Group>
@@ -404,62 +404,57 @@
             <File>
               <FileName>system_LPC17xx.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\system_LPC17xx.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>Source Code</GroupName>
-          <Files>
-            <File>
-              <FileName>HAL.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\SE350-master\manual_code\Context_Switching\src\HAL.c</FilePath>
-            </File>
-            <File>
-              <FileName>main.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\main.c</FilePath>
+              <FilePath>.\src\system_LPC17xx.c</FilePath>
             </File>
             <File>
               <FileName>uart_polling.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\uart_polling.c</FilePath>
-            </File>
-            <File>
-              <FileName>usr_proc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\usr_proc.c</FilePath>
-            </File>
-            <File>
-              <FileName>k_rtx_init.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\k_rtx_init.c</FilePath>
-            </File>
-            <File>
-              <FileName>k_process.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\k_process.c</FilePath>
-            </File>
-            <File>
-              <FileName>k_memory.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\k_memory.c</FilePath>
+              <FilePath>.\src\uart_polling.c</FilePath>
             </File>
             <File>
               <FileName>printf.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\printf.c</FilePath>
+              <FilePath>.\src\printf.c</FilePath>
             </File>
             <File>
-              <FileName>rtx.c</FileName>
+              <FileName>main_svc.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\rtx.c</FilePath>
+              <FilePath>.\src\main_svc.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>RTX Kernel Code</GroupName>
+          <Files>
+            <File>
+              <FileName>HAL.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\HAL.c</FilePath>
             </File>
             <File>
-              <FileName>util.c</FileName>
+              <FileName>k_rtx_init.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\util.c</FilePath>
+              <FilePath>.\src\k_rtx_init.c</FilePath>
+            </File>
+            <File>
+              <FileName>k_memory.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\k_memory.c</FilePath>
+            </File>
+            <File>
+              <FileName>k_process.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\k_process.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>User Code</GroupName>
+          <Files>
+            <File>
+              <FileName>usr_proc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\usr_proc.c</FilePath>
             </File>
           </Files>
         </Group>
