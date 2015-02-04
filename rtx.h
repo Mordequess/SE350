@@ -68,7 +68,7 @@ extern int k_get_process_priority(int);
 extern int _get_process_priority(U32 p_func, int process_var) __SVC_0;
 
 extern int k_set_process_priority(int, int);
-#define set_process_priority(process_var, priority_var) _set_process_priority((U32)k_get_process_priority, process_var, priority_var)
+#define set_process_priority(process_var, priority_var) _set_process_priority((U32)k_set_process_priority, process_var, priority_var)
 extern int _set_process_priority(U32 p_func, int process_var, int priority_var) __SVC_0;
 
 #endif /* !RTX_H_ */

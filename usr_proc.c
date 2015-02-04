@@ -85,28 +85,27 @@ void proc1(void)
 }
 
 //verifies get_process_priority() and uses set_process_priority.
-void proc2(void)
-{
+void proc2(void){
 	int i = 0;
 	int priority;
 	
 	//read and output all priorities.
-	for (i = 0; i <= 6; i++) {
+	for (i = 0; i <= 7; i++) {
 		priority = get_process_priority(i);
 		switch(priority) {
-			case '0':
+			case 0:
 				uart0_put_string("HIGH ");
 				break;
-			case '1':
+			case 1:
 				uart0_put_string("MEDIUM ");
 				break;
-			case '2':
+			case 2:
 				uart0_put_string("LOW ");
 				break;
-			case '3':
+			case 3:
 				uart0_put_string("LOWEST ");
 				break;
-			case '4':
+			case 4:
 				uart0_put_string("NULLPROCESS ");
 		}
 			
@@ -121,19 +120,19 @@ void proc2(void)
 	for (i = 0; i <= 6; i++) {
 		priority = get_process_priority(i);
 		switch(priority) {
-			case '0':
+			case 0:
 				uart0_put_string("HIGH ");
 				break;
-			case '1':
+			case 1:
 				uart0_put_string("MEDIUM ");
 				break;
-			case '2':
+			case 2:
 				uart0_put_string("LOW ");
 				break;
-			case '3':
+			case 3:
 				uart0_put_string("LOWEST ");
 				break;
-			case '4':
+			case 4:
 				uart0_put_string("NULLPROCESS ");
 		}
 		
@@ -154,10 +153,13 @@ void proc3(void)
 	int status = 0;
 	void *mem_ptr[60];
 	
+	void *thing[1];
 	for (i = 0; i < 60; i++) {
 		mem_ptr[i] = request_memory_block();
 		assert(mem_ptr[i] != NULL, "request_memory_block returned NULL");
 	}
+	printf("addr of mem_ptr: %x\n\r", mem_ptr);
+	printf("addr of thing: %x\n\r", thing);
 	uart0_put_string("60 memory blocks taken by proc3\n\r");
 	
 	//test an invalid release

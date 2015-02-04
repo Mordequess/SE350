@@ -218,11 +218,8 @@ int k_set_process_priority(int process_id, int priority) {
 	
 	pcb_modified_process->m_priority = priority;
 	
-	//Since priority was modified, we may need to pre-empt
-	//If a ready process now has higher priority than the current one, then release processor
-	if (g_ready_queue->m_priority < pcb_modified_process->m_priority) {
-		release_processor(); //TEMP: changing this from k_release to release out of fear
-	}
+	//Since priority was modified, we need to pre-empt
+	k_release_processor();
 	
 	return RTX_OK;
 }
