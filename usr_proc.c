@@ -232,7 +232,6 @@ void proc4(void)
 
 void proc5(void)
 {
-	int i;
 	int status;
 	
 	//check the priority getters and setters in fringe cases.

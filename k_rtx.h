@@ -36,11 +36,11 @@ typedef enum {NEW = 0, READY, RUNNING, BLOCKED} PROC_STATE_E;
 */
 typedef struct pcb 
 { 
-	struct pcb *mp_next;  /* next pcb, not used in this example */  
-	U32 *mp_sp;		/* stack pointer of the process */
 	U32 m_pid;		/* process id */
-	PROC_STATE_E m_state;   /* state of the process */  
 	U32 m_priority;
+	PROC_STATE_E m_state;   /* state of the process */  
+	U32 *mp_sp;		/* stack pointer of the process */
+	struct pcb *mp_next;  /* next pcb, not used in this example */  
 } pcb;
 
 #endif // ! K_RTX_H_

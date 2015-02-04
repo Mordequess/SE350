@@ -72,11 +72,10 @@ void memory_init(void){
 	p_end += 4;
 
 	/* allocate memory for pcb pointers   */
-	// 6 since there are 6 test processes
 	gp_pcbs = (pcb **)p_end;
-	p_end += NUM_TEST_PROCS * sizeof(pcb *);
+	p_end += NUM_PROCESSES * sizeof(pcb *);
   	
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+	for (i = 0; i < NUM_PROCESSES; i++ ) {
 		gp_pcbs[i] = (pcb *)p_end;
 		p_end += sizeof(pcb); 
 	}
@@ -87,18 +86,6 @@ void memory_init(void){
 		--gp_stack; 
 	}
 	
-	//allocate memory for the ready and blocked queues and their contents
-	g_ready_queue = (pcb *)p_end;
-	g_ready_queue = NULL;
-	p_end += sizeof(pcb *);
-
-	g_blocked_queue = (pcb *)p_end;
-	g_blocked_queue = NULL;
-	p_end += sizeof(pcb *);
-	
-	
-	
-  
 	//allocate memory for heap
 
 	//~ using p_end, we're taking out the reliance on the macro. (i'm on a dislike macros rave)
@@ -110,7 +97,7 @@ void memory_init(void){
 #ifdef DEBUG_0  
 	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
 	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
-	printf("stack total: 0x%x\n", ((U32)(NUM_TEST_PROCS*STACK_SIZE)));
+	printf("stack total: 0x%x\n", ((U32)(NUM_PROCESSES*STACK_SIZE)));
 	printf("heap start addr: 0x%x\n", ((U32)HEAP_START_ADDR));
 	printf("heap end addr: 0x%x\n", ((U32)HEAP_END_ADDR));
 	printf("heap length: 0x%x\n", (heap_Head->length));
@@ -195,7 +182,7 @@ int k_release_memory_block(void *memory_block) {
 	}
 
 	//If we have blocked processes, we can now unblock one.
-	if (g_blocked_queue != NULL) {
+	if (!is_empty_b()) {
 		unblock_and_switch_to_blocked_process();
 	}
 
