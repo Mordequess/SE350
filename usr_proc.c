@@ -47,13 +47,14 @@ In proc3																			//(proc3)
 6789																					//(proc1)
 proc1 has reached the end.										//(proc1)
 NULLPROCESS MEDIUM MEDIUM LOWEST LOW LOW LOW	//(proc2)
-60 memory blocks taken by proc4								//(proc4)	
+40 memory blocks taken by proc4								//(proc4)	
 proc2 has reached the end.										//(proc2)
 proc3 about to release 1 block								//(proc3)
 proc4 is free again														//(proc4)
 proc4 has reached the end.										//(proc4)
 In proc5. All checks passed.									//(proc5)
 proc5 has reached the end.										//(proc5)
+In proc6								//(proc6)
 50 memory blocks taken by proc6								//(proc6)
 proc6 has reached the end.										//(proc6)
 proc3 has reached the end.										//(proc3)
@@ -148,14 +149,16 @@ void proc3(void){
 	int i = 0;
 	int status = 0;
 	U32 mem_ptr[60];
+	int testAlloc = 5;
 	
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 60; i++) {
 		mem_ptr[i] = (U32)request_memory_block();
 		assert(mem_ptr[i] != NULL, "request_memory_block returned NULL");
 	}
 	
 #ifdef DEBUG_0 
-	//printf("addr of mem_ptr: %x\n\r", mem_ptr);
+	printf("addr of mem_ptr: %x\n\r", mem_ptr);
+	printf("addr of testAlloc: %x\n\r", &testAlloc);
 #endif
 	
 	uart0_put_string("60 memory blocks taken by proc3\n\r");
@@ -190,7 +193,7 @@ void proc4(void){
 	int i = 0;
 	int status = 0;
 	void *mem_ptr[40];
-	void *surplus_ptr;
+	void *surplus_ptr = NULL;
 	
 	//request 40 memory blocks, putting us at the limit.
 	for (i = 0; i < 40; i++) {
@@ -218,7 +221,7 @@ void proc4(void){
 		assert(status == RTX_OK, "Memory release was not OK");
 	}
 	
-	//setting to medium. Should not pre-empt.
+	//setting to medium
 	set_process_priority(4, MEDIUM);
 	
 	uart0_put_string("proc4 has reached the end.\n\r");
@@ -232,6 +235,8 @@ void proc4(void){
 void proc5(void){
 	int status;
 	
+	uart0_put_string("In proc 5.\n\r");
+	
 	//check the priority getters and setters in fringe cases.
 	status = get_process_priority(-1);
 	assert(status == RTX_ERR, "Invalid process priority get");
@@ -242,9 +247,7 @@ void proc5(void){
 	status = set_process_priority(1, 88);
 	assert(status == RTX_ERR, "Set an invalid process priority");
 	
-	uart0_put_string("In proc 5. All checks passed.\n\r");
-	
-	uart0_put_string("proc5 has reached the end.\n\r");
+	uart0_put_string("All checks passed. proc5 has reached the end.\n\r");
 	
 	//should call proc6 on its first time
 	while(1) {
@@ -256,6 +259,8 @@ void proc6(void){
 	void *mem_ptr[50];
 	int status;
 	int i = 0;
+	
+	uart0_put_string("In proc6\n\r");
 	
 	//Too many requests. Will block and go to 3.
 	for (i = 0; i < 50; i++) {

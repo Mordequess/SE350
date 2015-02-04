@@ -118,16 +118,18 @@ void *k_request_memory_block(void) {
 
 	//find the next free space large enough to fulfill the request
 	while (freeNode->length < BLOCK_SIZE) {
-		if (freeNode->next_Addr == 0){ //if this is last free node, the request can't be filled
+		if (freeNode->next_Addr == NULL){ //if this is last free node, the request can't be filled
+			__enable_irq();
 			block_current_process(); //will release processor
-			return NULL; 
 		}
 		else freeNode = (heap_blk*)(freeNode->next_Addr); //cast U32 as a heap_blk pointer to iterate through the linked list
 	}
 	
 	//return the bottom chunk of free space as a memory block, reduce free space
 	mem_blk = (void*)((U32)freeNode + freeNode->length - BLOCK_SIZE);
-	
+	if (freeNode == (heap_blk*)HEAP_START_ADDR){
+		mem_blk = (void*)((U32)mem_blk + sizeof(heap_blk*));
+	}
 	//update free space list
 	freeNode->length -= BLOCK_SIZE;
 	if (freeNode->length == 0 && freeNode != (heap_blk*)HEAP_START_ADDR) {
@@ -153,7 +155,6 @@ int k_release_memory_block(void* memory_block) {
 		){
 		return RTX_ERR;
 	}
-	
 	
 	__disable_irq(); //atomic(on);
 
@@ -185,6 +186,7 @@ int k_release_memory_block(void* memory_block) {
 
 	//If we have blocked processes, we can now unblock one.
 	if (!is_empty_b()) {
+		__enable_irq();
 		unblock_and_switch_to_blocked_process();
 	}
 

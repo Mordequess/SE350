@@ -232,7 +232,6 @@ int k_set_process_priority(int process_id, int priority) {
 		enqueue_b(pcb_modified_process);
 	} else if (pcb_modified_process->m_state == RUNNING) {
 		pcb_modified_process->m_state = READY;
-		enqueue_r(pcb_modified_process);
 	}
 	
 	//Since priority was modified, we need to pre-empt
@@ -276,7 +275,7 @@ pcb *get_pcb_pointer_from_process_id(int process_id) {
 //called from memory
 void block_current_process(void) {
 	gp_current_process->m_state = BLOCKED;
-	release_processor();
+	k_release_processor();
 }
 
 //Tells processor to switch to the highest blocked process. It is no longer blocked.
@@ -286,7 +285,7 @@ int unblock_and_switch_to_blocked_process(void) {
 	enqueue_r(processToSwitchTo);
 	
 	gp_current_process->m_state = READY;
-	release_processor();
+	k_release_processor();
 	return RTX_OK;
 }
 
