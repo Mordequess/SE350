@@ -8,32 +8,32 @@
 #endif 
 
 /* initialization table item */
-PROC_INIT g_test_procs[NUM_TEST_PROCS];
+PROC_INIT g_test_procs[NUM_PROCESSES];
 
 void set_test_procs() {
 	int i;
-	for( i = 0; i < NUM_TEST_PROCS; i++ ) {
-		g_test_procs[i].m_pid=(U32)(i+1);
-		g_test_procs[i].m_stack_size=0x100;
+	for( i = 1; i <= NUM_TEST_PROCS; i++ ) {
+		g_test_procs[i].m_pid=(U32)(i);
+		g_test_procs[i].m_stack_size = 0x500; //TODO: make this macro'd
 	}
   
-	g_test_procs[0].mpf_start_pc = &proc1;
-	g_test_procs[0].m_priority   = MEDIUM;
-	
-	g_test_procs[1].mpf_start_pc = &proc2;
+	g_test_procs[1].mpf_start_pc = &proc1;
 	g_test_procs[1].m_priority   = MEDIUM;
 	
-	g_test_procs[2].mpf_start_pc = &proc3;
-	g_test_procs[2].m_priority   = LOW;
+	g_test_procs[2].mpf_start_pc = &proc2;
+	g_test_procs[2].m_priority   = MEDIUM;
 	
-	g_test_procs[3].mpf_start_pc = &proc4;
+	g_test_procs[3].mpf_start_pc = &proc3;
 	g_test_procs[3].m_priority   = LOW;
 	
-	g_test_procs[4].mpf_start_pc = &proc5;
+	g_test_procs[4].mpf_start_pc = &proc4;
 	g_test_procs[4].m_priority   = LOW;
 	
-	g_test_procs[5].mpf_start_pc = &proc6;
+	g_test_procs[5].mpf_start_pc = &proc5;
 	g_test_procs[5].m_priority   = LOW;
+	
+	g_test_procs[6].mpf_start_pc = &proc6;
+	g_test_procs[6].m_priority   = LOW;
 	
 }
 
@@ -61,12 +61,11 @@ proc3 has reached the end.										//(proc3)
 */
 
 //prints the number 1-9 to the screen. Releases at 5.
-void proc1(void)
-{
+void proc1(void){
 	int i = 1;
 	
 	for (i = 1; i < 10; i++) {
-		uart0_put_char('1' + i);
+		uart0_put_char('0' + i);
 		
 		if (i == 5) {
 			uart0_put_string("\n\r");
@@ -90,7 +89,7 @@ void proc2(void){
 	int priority;
 	
 	//read and output all priorities.
-	for (i = 0; i <= 7; i++) {
+	for (i = 0; i <= 6; i++) {
 		priority = get_process_priority(i);
 		switch(priority) {
 			case 0:
@@ -108,9 +107,7 @@ void proc2(void){
 			case 4:
 				uart0_put_string("NULLPROCESS ");
 		}
-			
 	}
-	
 	uart0_put_string("\n\r");
 	
 	//set process 3 to HIGH. This should pre-empt.
@@ -135,8 +132,8 @@ void proc2(void){
 			case 4:
 				uart0_put_string("NULLPROCESS ");
 		}
-		
 	}
+	uart0_put_string("\n\r");
 	
 	set_process_priority(4, HIGH); //proc4 will take over.
 	
@@ -147,19 +144,20 @@ void proc2(void){
 	
 }
 
-void proc3(void)
-{
+void proc3(void){
 	int i = 0;
 	int status = 0;
-	void *mem_ptr[60];
+	U32 mem_ptr[60];
 	
-	void *thing[1];
-	for (i = 0; i < 60; i++) {
-		mem_ptr[i] = request_memory_block();
+	for (i = 0; i < 10; i++) {
+		mem_ptr[i] = (U32)request_memory_block();
 		assert(mem_ptr[i] != NULL, "request_memory_block returned NULL");
 	}
-	printf("addr of mem_ptr: %x\n\r", mem_ptr);
-	printf("addr of thing: %x\n\r", thing);
+	
+#ifdef DEBUG_0 
+	//printf("addr of mem_ptr: %x\n\r", mem_ptr);
+#endif
+	
 	uart0_put_string("60 memory blocks taken by proc3\n\r");
 	
 	//test an invalid release
@@ -174,10 +172,10 @@ void proc3(void)
 	set_process_priority(3, LOWEST);
 	
 	uart0_put_string("Proc3 about to release 1 block\n\r");
-	status = release_memory_block(mem_ptr[0]); //should unblock proc4
+	status = release_memory_block((void *)mem_ptr[0]); //should unblock proc4
 	
 	for (i = 1; i < 60; i++) {
-		status = release_memory_block(mem_ptr[i]);
+		status = release_memory_block((void *)mem_ptr[i]);
 		assert(status == RTX_OK, "Release was not OK");
 	}
 	
@@ -188,8 +186,7 @@ void proc3(void)
 }
 
 
-void proc4(void)
-{
+void proc4(void){
 	int i = 0;
 	int status = 0;
 	void *mem_ptr[40];
@@ -232,8 +229,7 @@ void proc4(void)
 	}
 }
 
-void proc5(void)
-{
+void proc5(void){
 	int status;
 	
 	//check the priority getters and setters in fringe cases.
@@ -256,8 +252,7 @@ void proc5(void)
 	}
 }
 
-void proc6(void)
-{
+void proc6(void){
 	void *mem_ptr[50];
 	int status;
 	int i = 0;

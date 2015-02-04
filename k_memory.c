@@ -95,12 +95,15 @@ void memory_init(void){
 	//~ this new calculation takes into account some space for the process stacks. (and the size of a heap block)
 
 #ifdef DEBUG_0  
-	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
-	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
+	printf("--MEMORY DEBUG STATUS--\n");
+	for (i = 0; i <= 6; i++){
+	printf("gp_pcbs[%x] = 0x%x \n", i, gp_pcbs[i]);
+	}
 	printf("stack total: 0x%x\n", ((U32)(NUM_PROCESSES*STACK_SIZE)));
 	printf("heap start addr: 0x%x\n", ((U32)HEAP_START_ADDR));
 	printf("heap end addr: 0x%x\n", ((U32)HEAP_END_ADDR));
 	printf("heap length: 0x%x\n", (heap_Head->length));
+	printf("--END OF MEMORY DEBUG STATUS--\n");
 #endif
 
 }
@@ -140,10 +143,8 @@ void *k_request_memory_block(void) {
 	return mem_blk;
 }
 	
-int k_release_memory_block(void *memory_block) {
+int k_release_memory_block(void* memory_block) {
 	heap_blk* temp = (heap_blk*)HEAP_START_ADDR;
-
-	__disable_irq(); //atomic(on);
 
 	//check memory block pointer is valid
 	if ( (U32)memory_block < HEAP_START_ADDR + 4
@@ -154,6 +155,7 @@ int k_release_memory_block(void *memory_block) {
 	}
 	
 	
+	__disable_irq(); //atomic(on);
 
 	//special case: memory block is very top of heap
 	if ((U32)memory_block == HEAP_START_ADDR + 4){

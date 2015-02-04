@@ -18,6 +18,7 @@
 #define MEDIUM  1
 #define LOW     2
 #define LOWEST  3
+#define NULL_PRIORITY  4
 
 #define NUM_PRIORITIES 5
 
