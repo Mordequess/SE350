@@ -19,7 +19,7 @@ typedef struct heap_blk {
 
 //heap allocate enough space for X (currently 100) memory blocks + one heap header
 #define HEAP_START_ADDR (0x10001000 - sizeof(heap_blk *)) //arbitrarily chosen to leave enough space on either side
-#define HEAP_END_ADDR 0x10004200 //(HEAP_START_ADDR + BLOCK_SIZE * 100 + sizeof(heap_blk *))
+#define HEAP_END_ADDR 0x10001160 //(HEAP_START_ADDR + BLOCK_SIZE * 2 + sizeof(heap_blk *))
 
 void memory_init(void);
 U32 *alloc_stack(U32 size_b);

@@ -28,7 +28,7 @@ pcb* g_blocked_queue;			/* Blocked queue */
 
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_PROCESSES];
-extern PROC_INIT g_test_procs[NUM_PROCESSES];
+extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 /**
  * @biref: initialize all processes in the system
@@ -39,7 +39,7 @@ extern PROC_INIT g_test_procs[NUM_PROCESSES];
 //Null process
 void null_process() {
 	while (1) {
-		printf("Inside null process");
+		//printf("Inside null process");
 		release_processor();
 	}
 }
@@ -59,10 +59,10 @@ void process_init()
 	g_proc_table[0].m_priority = NULL_PRIORITY;
 
 	for (i = 1; i < NUM_PROCESSES; i++ ) {
-		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
-		g_proc_table[i].m_stack_size = g_test_procs[i].m_stack_size;
-		g_proc_table[i].mpf_start_pc = g_test_procs[i].mpf_start_pc;
-		g_proc_table[i].m_priority = g_test_procs[i].m_priority;
+		g_proc_table[i].m_pid = g_test_procs[i-1].m_pid;
+		g_proc_table[i].m_stack_size = g_test_procs[i-1].m_stack_size;
+		g_proc_table[i].mpf_start_pc = g_test_procs[i-1].mpf_start_pc;
+		g_proc_table[i].m_priority = g_test_procs[i-1].m_priority;
 	}
   
 	/* initilize exception stack frame (i.e. initial context) for each process */
@@ -176,7 +176,7 @@ new process
 	
 	pcb *p_pcb_old = gp_current_process; // initially this is NULL
 	
-	if (gp_current_process->m_state != BLOCKED) {
+	if (gp_current_process != NULL && gp_current_process->m_state != BLOCKED) {
 		gp_current_process->m_state = READY;
 	}
 	
@@ -235,7 +235,9 @@ int k_set_process_priority(int process_id, int priority) {
 	}
 	
 	//Since priority was modified, we need to pre-empt
-	k_release_processor();
+	if (pcb_modified_process->m_priority <= gp_current_process->m_priority){
+		k_release_processor();
+	}
 	
 	return RTX_OK;
 }
