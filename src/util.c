@@ -10,6 +10,6 @@ void assert(int expression, unsigned char * message) {
 		while (1) {} //freeze
 	}
 	
-	//if expression is true, do nothing.
+	//if expression is true, do nothing. Just exit.
 	
 }

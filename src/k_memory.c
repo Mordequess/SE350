@@ -2,7 +2,7 @@
 
 #ifdef DEBUG_0
 #include "printf.h"
-#endif /* ! DEBUG_0 */
+#endif
 
 /*
 0x10000000+---------------------------+ Low Address
@@ -88,7 +88,7 @@ void memory_init(void){
 	
 	//allocate memory for heap
 
-	//~ using p_end, we're taking out the reliance on the macro. (i'm on a dislike macros rave)
+	//~ using p_end, we're taking out the reliance on the macro
 	heap_Head = (heap_blk*)HEAP_START_ADDR; //p_end;
 	heap_Head->next_Addr = NULL;
 	heap_Head->length = HEAP_END_ADDR - HEAP_START_ADDR - sizeof(heap_blk *); //length in heap_Head adjusts for header, others won't

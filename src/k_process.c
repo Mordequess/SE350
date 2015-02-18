@@ -1,18 +1,3 @@
-/**
- * @file:   k_process.c  
- * @brief:  process management C file
- * @author: Yiqing Huang
- * @author: Thomas Reidemeister
- * @date:   2014/01/17
- * NOTE: The example code shows one way of implementing context switching.
- *       The code only has minimal sanity check. There is no stack overflow check.
- *       The implementation assumes only two simple user processes and NO HARDWARE INTERRUPTS. 
- *       The purpose is to show how context switch could be done under stated assumptions. 
- *       These assumptions are not true in the required RTX Project!!!
- *       If you decide to use this piece of code, you need to understand the assumptions and
- *       the limitations. 
- */
-
 #include "k_process.h"
 
 
@@ -30,10 +15,7 @@ pcb* g_blocked_queue;			/* Blocked queue */
 PROC_INIT g_proc_table[NUM_PROCESSES];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
-/**
- * @biref: initialize all processes in the system
- * NOTE: We assume there are only two user processes in the system in this example.
- */
+
 
 
 //Null process
@@ -44,6 +26,9 @@ void null_process() {
 	}
 }
 
+/**
+ * @brief: initialize all processes in the system
+ */
 void process_init() 
 {
 	int i;
@@ -161,18 +146,13 @@ int process_switch(pcb *p_pcb_old) {
 	}
 	return RTX_OK;
 }
+
 /**
  * @brief release_processor(). 
  * @return RTX_ERR on error and zero on success
  * POST: gp_current_process gets updated to next to run process
  */
 int k_release_processor(void){
-	/* GITHUB CODE
-1. Set current process to state ready
-2. rpq enqueue(current process) put current process in ready queues
-3. process switch invokes scheduler and context-switches to the
-new process
-	*/
 	
 	pcb *p_pcb_old = gp_current_process; // initially this is NULL
 	
@@ -247,7 +227,7 @@ int k_get_process_priority(int process_id) {
 		
 	pcb* p_pcb_param = get_pcb_pointer_from_process_id(process_id);
 	
-	//For invalid process_id out of range, manual says to return -1 (RTX_ERR)
+	//For invalid process_id out of range, return RTX_ERR
 	if (process_id > PID_P6 || process_id < PID_NULL) {
 		return RTX_ERR;
 	}
