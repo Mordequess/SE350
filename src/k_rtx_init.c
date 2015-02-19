@@ -17,6 +17,7 @@ void k_rtx_init(void)
 	uart1_init();       // uart1, polling
 	memory_init();
 	process_init();
+	init_i_processes();
 	__enable_irq();
 	
 	//uart0_put_string("Type 'S' in COM0 terminal to switch between proc1 and proc2 or wait for them to switch between themselves\n\r");
