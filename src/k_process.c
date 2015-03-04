@@ -16,12 +16,9 @@ PROC_INIT g_proc_table[NUM_PROCESSES];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 
-
-
 //Null process
 void null_process() {
 	while (1) {
-		//printf("Inside null process");
 		release_processor();
 	}
 }
@@ -87,7 +84,6 @@ void process_init()
  *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
  *      No other effect on other global variables.
  */
-
 pcb *scheduler(void){
 	pcb* next;
 	//If process is running, find something to swap it with

@@ -28,3 +28,16 @@ void *k_receive_message(int *sender_id) {
 	return env ;
 	*/
 }
+
+/*
+The message (in the memory block pointed to by the second parameter) 
+will be sent to the destination process (process_id) after the expiration
+of the delay (timeout, given in millisecond units).
+*/
+int k_delayed_send(int process_id, void *message_envelope, int delay) {
+	
+	if (delay < 0) {
+		return RTX_ERR;
+	}
+	
+}

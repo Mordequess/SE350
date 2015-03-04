@@ -19,4 +19,8 @@ extern void* k_receive_message(int* sender_id);
 #define receive_message(sender) _receive_message((U32)k_receive_message, sender)
 extern void* _receive_message(U32 p_func, int* sender) __SVC_0;
 
+extern int k_delayed_send(int pid, void * message_envelope, int delay);
+#define delayed_send(pid, env, delay) _delayed_send((U32)k_delayed_send, process_id, message_envelope, delay)
+extern int _delayed_send(U32 p_func, int process_id, void *message_envelope, int delay) __SVC_0;
+
 #endif
