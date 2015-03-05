@@ -11,7 +11,7 @@
 #define NULL 0
 #define NUM_TEST_PROCS 6
 
-#define NUM_PROCESSES 7
+#define NUM_PROCESSES 16
 
 /* Process Priority. The bigger the number is, the lower the priority is*/
 #define HIGH    0
@@ -23,13 +23,22 @@
 #define NUM_PRIORITIES 5
 
 /*Process IDs*/
-#define PID_NULL 0
-#define PID_P1   1
-#define PID_P2   2
-#define PID_P3   3
-#define PID_P4   4
-#define PID_P5   5
-#define PID_P6   6
+#define PID_NULL 					0
+#define PID_P1   					1
+#define PID_P2   					2
+#define PID_P3   					3
+#define PID_P4   					4
+#define PID_P5   					5
+#define PID_P6   					6
+#define PID_A		 					7
+#define PID_B    					8
+#define PID_C    					9
+#define PID_SET_PRIORITY 10
+#define PID_WALL_CLOCK	 11
+#define PID_KCD					 12
+#define PID_CRT					 13
+#define PID_TIMER				 14
+#define PID_UART				 15
 
 /* ----- Types ----- */
 typedef unsigned int U32;

@@ -3,8 +3,7 @@
 
 #include "rtx.h"
 
-void init_i_processes(void);
-void timeout_i_process(void);
-void uart0_i_process(void);
+void timer_i_process(void);
+void uart_i_process(void);
 
 #endif

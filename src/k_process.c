@@ -1,5 +1,5 @@
 #include "k_process.h"
-
+#include "k_iprocess.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -35,12 +35,25 @@ void process_init()
 	set_test_procs();
 
 	//NULL process
-	g_proc_table[0].m_pid = 0;
-	g_proc_table[0].m_stack_size = STACK_SIZE;
-	g_proc_table[0].mpf_start_pc = &null_process;
-	g_proc_table[0].m_priority = NULL_PRIORITY;
+	g_proc_table[PID_NULL].m_pid = PID_NULL;
+	g_proc_table[PID_NULL].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_NULL].mpf_start_pc = &null_process;
+	g_proc_table[PID_NULL].m_priority = NULL_PRIORITY;
+	
+	//Timer iprocess
+	g_proc_table[PID_TIMER].m_pid = PID_TIMER;
+	g_proc_table[PID_TIMER].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_TIMER].mpf_start_pc = &timer_i_process;
+	g_proc_table[PID_TIMER].m_priority = HIGH;
+	
+	//Uart iprocess
+	g_proc_table[PID_UART].m_pid = PID_UART;
+	g_proc_table[PID_UART].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_UART].mpf_start_pc = &uart_i_process;
+	g_proc_table[PID_UART].m_priority = HIGH;
 
-	for (i = 1; i < NUM_PROCESSES; i++ ) {
+	//For the six test processes
+	for (i = 1; i <= NUM_TEST_PROCS; i++ ) {
 		g_proc_table[i].m_pid = g_test_procs[i-1].m_pid;
 		g_proc_table[i].m_stack_size = g_test_procs[i-1].m_stack_size;
 		g_proc_table[i].mpf_start_pc = g_test_procs[i-1].mpf_start_pc;
@@ -50,6 +63,12 @@ void process_init()
 	/* initilize exception stack frame (i.e. initial context) for each process */
 	for (i = 0; i < NUM_PROCESSES; i++ ) {
 		int j;
+		
+		//avoid modifying procs that don't appear in P1 and P2
+		if (i > PID_P6 && i < PID_TIMER) {
+			continue;
+		}
+
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
 		(gp_pcbs[i])->m_state = NEW;
@@ -63,9 +82,8 @@ void process_init()
 		(gp_pcbs[i])->mp_sp = sp;
 	}
 
-	//set up ready queue with all processes
-	//note: does not change state, they all still count as NEW
-	for ( i = 0; i < NUM_PROCESSES; i++ ) {
+	//set up ready queue with all the test processes
+	for ( i = 0; i <= NUM_TEST_PROCS; i++ ) {
 		enqueue_r(gp_pcbs[i]);
 	}
 	
