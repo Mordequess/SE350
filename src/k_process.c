@@ -1,5 +1,6 @@
 #include "k_process.h"
 #include "k_iprocess.h"
+#include "k_system_proc.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -51,6 +52,24 @@ void process_init()
 	g_proc_table[PID_UART].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_UART].mpf_start_pc = &uart_i_process;
 	g_proc_table[PID_UART].m_priority = HIGH;
+	
+	//KCD process
+	g_proc_table[PID_KCD].m_pid = PID_KCD;
+	g_proc_table[PID_KCD].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_KCD].mpf_start_pc = &kcd_proc;
+	g_proc_table[PID_KCD].m_priority = HIGH;
+	
+	//CRT process
+	g_proc_table[PID_CRT].m_pid = PID_CRT;
+	g_proc_table[PID_CRT].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_CRT].mpf_start_pc = &crt_proc;
+	g_proc_table[PID_CRT].m_priority = HIGH;
+	
+	//Wall clock process
+	g_proc_table[PID_UART].m_pid = PID_UART;
+	g_proc_table[PID_UART].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_UART].mpf_start_pc = &wall_clock_proc;
+	g_proc_table[PID_UART].m_priority = HIGH;
 
 	//For the six test processes
 	for (i = 1; i <= NUM_TEST_PROCS; i++ ) {
@@ -65,7 +84,7 @@ void process_init()
 		int j;
 		
 		//avoid modifying procs that don't appear in P1 and P2
-		if (i > PID_P6 && i < PID_TIMER) {
+		if (i > PID_P6 && i < PID_WALL_CLOCK) {
 			continue;
 		}
 
@@ -127,7 +146,7 @@ pcb *scheduler(void){
  *      No other effect on other global variables.
  */
 int process_switch(pcb *p_pcb_old) {
-	//THE CODE BELOW IS THE GITHUB CODE.
+
 	PROC_STATE_E state;
 	
 	state = gp_current_process->m_state;
@@ -242,7 +261,8 @@ int k_get_process_priority(int process_id) {
 	pcb* p_pcb_param = get_pcb_pointer_from_process_id(process_id);
 	
 	//For invalid process_id out of range, return RTX_ERR
-	if (process_id > PID_P6 || process_id < PID_NULL) {
+	//For P2, valid processes are 0-6 and then 11-15
+	if (process_id < PID_NULL || process_id > PID_UART || (process_id > PID_P6 && process_id < PID_WALL_CLOCK)) {
 		return RTX_ERR;
 	}
 
@@ -258,10 +278,14 @@ int k_get_process_priority(int process_id) {
 
 // ----------- HELPER FUNCTIONS BEGIN HERE ------------------------------------
 
+pcb *get_current_process() {
+	return gp_current_process;
+}
+
 pcb *get_pcb_pointer_from_process_id(int process_id) {
 	
 	//invalid process_id check
-	if (process_id < 0 || process_id > 6) {
+	if (process_id < PID_NULL || process_id > PID_UART) {
 		return NULL;
 	}
 	

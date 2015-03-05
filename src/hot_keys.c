@@ -2,6 +2,7 @@
 #include "rtx.h"
 #include "k_rtx.h"
 #include "uart_polling.h"
+#include "printf.h"
 
 void process_hot_key(char c) {
 	
@@ -32,6 +33,6 @@ void print_queue() {
 
 void print_process(pcb *proc) {
 	
-	uart0_put_string("AAAAAA");
+	printf("Process Id = %d, Priority = %d\r\n", proc->m_pid, proc->m_priority);
 	
 }
