@@ -9,8 +9,8 @@
 
 void process_hot_key(char c);
 
-void print_queue(void);			//depending on queue implementation, should take param
-void print_process(pcb *proc);
+void print_queue(pcb*);
+void print_process(pcb*);
 
 
 #endif

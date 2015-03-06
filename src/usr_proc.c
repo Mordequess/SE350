@@ -272,10 +272,7 @@ void proc3(void){
 
 
 void proc4(void){
-	int i = 0;
-	int status = 0;
-	void *mem_ptr[40];
-	void *surplus_ptr = NULL;
+
 	
 
 	
@@ -290,7 +287,7 @@ void proc4(void){
 }
 
 void proc5(void){
-	int status;
+
 
 	
 	
@@ -302,9 +299,7 @@ void proc5(void){
 }
 
 void proc6(void){
-	void *mem_ptr[50];
-	int status;
-	int i = 0;
+
 	
 
 	

@@ -3,6 +3,7 @@
 #include "k_rtx.h"
 #include "uart_polling.h"
 #include "printf.h"
+#include "k_process.h"
 
 void process_hot_key(char c) {
 	
@@ -10,16 +11,19 @@ void process_hot_key(char c) {
 	
 	switch(c) {
 		case DEBUG_HOTKEY_1:
-			//print procs on ready queue
-			print_queue();
+			printf("========== READY QUEUE ==========\n\r");
+			print_queue(get_ready_queue());
+			printf("====== END OF READY QUEUE =======\n\r");
 			break;
 		case DEBUG_HOTKEY_2:
-			//print procs on blocked on memory queue
-			print_queue();
+			printf("========== BLOCKED ON MEMORY QUEUE ==========\n\r");
+			print_queue(get_blocked_on_memory_queue());
+			printf("====== END OF BLOCKED ON MEMORY QUEUE =======\n\r");
 			break;
 		case DEBUG_HOTKEY_3:
-			print_queue();
-			//print procs on blocked on receive queue
+			printf("========== BLOCKED ON RECEIVE QUEUE ==========\n\r");
+			print_queue(get_blocked_on_receive_queue());
+			printf("====== END OF BLOCKED ON RECEIVE QUEUE =======\n\r");
 			break;
 	}
 	
@@ -27,12 +31,26 @@ void process_hot_key(char c) {
 	
 }
 
-void print_queue() {
+/*
+Prints a queue given a head.
+This process must not modify the queue itself
+*/
+void print_queue(pcb* head) {
 	
+	pcb* temp = head;
+	if (head == NULL) return;
+
+	while (temp != NULL) {
+		print_process(temp);
+		temp = temp->mp_next;
+	}
 }
 
+/*
+Prints the PID and priority of a process.
+*/
 void print_process(pcb *proc) {
 	
-	printf("Process Id = %d, Priority = %d\r\n", proc->m_pid, proc->m_priority);
+	printf("Process Id = %d, Priority = %d\n\r", proc->m_pid, proc->m_priority);
 	
 }

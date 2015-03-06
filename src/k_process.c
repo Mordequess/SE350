@@ -10,7 +10,8 @@
 pcb **gp_pcbs;                  /* array of pcbs */
 pcb *gp_current_process = NULL; /* always point to the current RUN process */
 pcb* g_ready_queue;				/* Ready queue */
-pcb* g_blocked_queue;			/* Blocked queue */
+pcb* g_blocked_on_memory_queue;			/* Blocked queue */
+pcb* g_blocked_on_receive_queue;
 
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_PROCESSES];
@@ -129,7 +130,7 @@ pcb *scheduler(void){
 		if (gp_current_process->m_state == READY) {
 			enqueue(&g_ready_queue, gp_current_process);
 		}
-		else enqueue(&g_blocked_queue, gp_current_process);
+		else enqueue(&g_blocked_on_memory_queue, gp_current_process);
 	}
 	
 	next = dequeue(&g_ready_queue); //if none are ready, defaults to null process
@@ -242,8 +243,8 @@ int k_set_process_priority(int process_id, int priority) {
 		remove_queue_node(&g_ready_queue, pcb_modified_process);
 		enqueue(&g_ready_queue, pcb_modified_process);
 	} else if (pcb_modified_process->m_state == BLOCKED) {
-		remove_queue_node(&g_blocked_queue, pcb_modified_process);
-		enqueue(&g_blocked_queue, pcb_modified_process);
+		remove_queue_node(&g_blocked_on_memory_queue, pcb_modified_process);
+		enqueue(&g_blocked_on_memory_queue, pcb_modified_process);
 	} else if (pcb_modified_process->m_state == RUNNING) {
 		pcb_modified_process->m_state = READY;
 	}
@@ -281,6 +282,18 @@ pcb *get_current_process() {
 	return gp_current_process;
 }
 
+pcb* get_ready_queue() {
+	return g_ready_queue;
+}
+
+pcb* get_blocked_on_memory_queue() {
+	return g_blocked_on_memory_queue;
+}
+
+pcb* get_blocked_on_receive_queue() {
+	return g_blocked_on_receive_queue;
+}
+
 pcb *get_pcb_pointer_from_process_id(int process_id) {
 	
 	//invalid process_id check
@@ -297,9 +310,9 @@ void block_current_process(void) {
 	k_release_processor();
 }
 
-//Tells processor to switch to the highest blocked process. It is no longer blocked.
+//Tells processor to switch to the highest blocked-on-memory process. It is no longer blocked.
 int unblock_and_switch_to_blocked_process(void) {
-	pcb* processToSwitchTo = dequeue(&g_blocked_queue);
+	pcb* processToSwitchTo = dequeue(&g_blocked_on_memory_queue);
 	processToSwitchTo->m_state = READY;
 	enqueue(&g_ready_queue, processToSwitchTo);
 	

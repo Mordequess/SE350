@@ -185,7 +185,7 @@ int k_release_memory_block(void* memory_block) {
 	}
 
 	//If we have blocked processes, we can now unblock one.
-	if (!is_empty(g_blocked_queue)) {
+	if (!is_empty(get_blocked_on_memory_queue())) {
 		__enable_irq();
 		unblock_and_switch_to_blocked_process();
 	}
