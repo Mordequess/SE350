@@ -1,53 +1,57 @@
-/**
- * @file:   usr_proc.c
- * @brief:  Six user processes: proc1...6 to test memory blocking/unblocking 
- * @author: Yiqing Huang
- * @date:   2014/02/07
- * NOTE: Each process is in an infinite loop. Processes never terminate.
- *       The test requires set_process_priority preemption works properly.
- *   
- * Two possible output unde the assumption that 
- * we have TWO memory blocks in the system.
- *
- * Expected UART output: (assuming memory block has ownership.):
- * ABCDE
- * FGHIJ
- * 01234
- * KLMNO
- * 56789
- * proc2: end of testing
- * proc3: 
- * proc4: 
- * proc5: 
- * proc6: 
- * proc3: 
- * proc4: 
- * proc5: 
- * proc6: 
- *
- * Expected UART output: (assuming shared memory among processes (no ownership))
- * ABCDE
- * FGHIJ
- * 01234
- * KLMNO
- * 56789
- * PQRST
- * 01234
- * UVWXY
- * 56789
- * ZABCD
- * 01234
- * ...... you see P1 and P2 keep alternating between each other, p3-p6 will never run
- * 
- */
-
 #include "rtx.h"
 #include "uart_polling.h"
 #include "usr_proc.h"
+#include "util.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
-#endif /* DEBUG_0 */
+#endif 
+
+const int RUN_LENGTH = 5;
+int expected_proc_order[] = 
+{1, 2, 3, 3, 1, 1, 2, 2, 2, 3, 1, 3, 3, 2
+
+};
+int actual_proc_order[RUN_LENGTH];
+int current_index = 0;
+
+const int TOTAL_TESTS = 8;
+int total_passed_tests = 0;
+int total_failed_tests = 0;
+
+/* Adds the indicated process to the runtime history. */
+void add_to_order(int proc_id) {
+	actual_proc_order[current_index] = proc_id;
+	current_index++;
+}
+
+/* Returns 1 if expected sequence order has occurred. */
+int check_order() {
+	int i;
+	for (i = 0; i < current_index; i++) {
+		if (actual_proc_order[i] != expected_proc_order[i]) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/*
+Logs an OK test if test_flag is true and check_order() gives expected order
+Otherwise, the test is logged as a failure
+*/
+void submit_test(unsigned char* test_number, int test_flag) {
+	uart0_put_string("G028_test: test ");
+	uart0_put_string(test_number);
+	uart0_put_string(" ");
+	if (test_flag && check_order()) {
+		uart0_put_string("OK\n\r");
+		total_passed_tests++;
+	} else {
+		uart0_put_string("FAIL\n\r");
+		total_failed_tests++;
+	}
+}
 
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
@@ -63,7 +67,7 @@ void set_test_procs() {
 	g_test_procs[0].m_priority   = MEDIUM;
 	
 	g_test_procs[1].mpf_start_pc = &proc2;
-	g_test_procs[1].m_priority   = HIGH;
+	g_test_procs[1].m_priority   = MEDIUM;
 	
 	g_test_procs[2].mpf_start_pc = &proc3;
 	g_test_procs[2].m_priority   = LOW;
@@ -79,106 +83,234 @@ void set_test_procs() {
 }
 
 
-/**
- * @brief: a process that prints five uppercase letters
- *         and request a memory block.
- */
-void proc1(void)
-{
+void proc1(void) {
+	int i;
+	int status[6];
+	int testPassed = 1;
+	void* mem_ptr;
+	
+	uart0_put_string("G028_test: START\n\r");
+	
+	//get invalid pids
+	status[0] = get_process_priority(-1);
+	status[1] = get_process_priority(19);
+
+	//try setting null process priority
+	status[2] = set_process_priority(0, 1);
+
+	//try setting KCD (system) priority
+	status[3] = set_process_priority(PID_KCD, 2);
+
+	//try setting valid process's priority to null process priority
+	status[4] = set_process_priority(1, NULL_PRIORITY);
+
+	//try setting valid process's priority to an invalid priority
+	status[5] = set_process_priority(1, 88);
+
+
+	for (i = 0; i < 6; i++) {
+		if (status[i] != RTX_ERR) {
+			testPassed = 0;
+		}
+	}
+	
+	add_to_order(1);
+	submit_test("1", testPassed);
+	
+	//should take us to proc 2
+	release_processor();
+	
+	//Proc 1 is back.
+	add_to_order(1);
+	testPassed = 1;
+	
+	set_process_priority(4, LOWEST);
+	set_process_priority(4, LOW);
+	
+	//neither call should have pre-empted.
+	add_to_order(1);
+	submit_test("5", testPassed);
+	
+	//request memory so we get blocked and go to proc2.
+	mem_ptr = request_memory_block();
+	
+	//back in P1.
+	add_to_order(1);
+	if (mem_ptr == NULL) testPassed = 0;
+	
+	submit_test("7", testPassed);
+	
+	release_memory_block(mem_ptr);
+	
+	//P3 will take over.
+	set_process_priority(1, LOWEST);
+	
+	while(1) {
+		release_processor();
+	}
+	
+}
+
+//verifies get_process_priority() and uses set_process_priority.
+void proc2(void){
 	int i = 0;
-	void *p_mem_blk;
-	while ( 1 ) {
-		if ( i != 0 && i%5 == 0 ) {
-			uart0_put_string("\n\r");
-			p_mem_blk = request_memory_block();
-#ifdef DEBUG_0
-			printf("proc1: p_mem_blk=0x%x\n", p_mem_blk);
-#endif /* DEBUG_0 */
+	int testPassed = 1;
+	
+	int expected_priorities[] = {NULL_PRIORITY, MEDIUM, MEDIUM, LOW, LOW, LOW, LOW};
+	int actual_priorities[7];
+	
+	add_to_order(2);
+
+	for (i = 0; i < 7; i++) {
+		actual_priorities[i] = get_process_priority(i);
+		if (actual_priorities[i] != expected_priorities[i]) {
+			testPassed = 0;
 		}
-		uart0_put_char('A' + i%26);
-		i++;
 	}
+	
+	submit_test("2", testPassed);
+	
+	//should pre-empt to proc3.
+	set_process_priority(3, HIGH);
+	
+	//proc2 is back.
+	testPassed = 1;
+	add_to_order(2);
+	
+	//expecting different priorities now (only for P3)
+	expected_priorities[3] = LOWEST;
+	for (i = 0; i < 7; i++) {
+		actual_priorities[i] = get_process_priority(i);
+		if (actual_priorities[i] != expected_priorities[i]) {
+			testPassed = 0;
+		}
+	}
+	add_to_order(2);
+	submit_test("6", testPassed);
+	
+	//should not pre-empt because 1 is blocked on memory
+	set_process_priority(1, HIGH);
+	add_to_order(2);
+	
+	//pre-empt.
+	set_process_priority(3, HIGH);
+	
+	//back in P2.
+	add_to_order(2);
+	
+	//P4 will take over.
+	set_process_priority(2, LOWEST);
+	
+	while(1) {
+		release_processor();
+	}
+	
 }
 
-/**
- * @brief: a process that prints five numbers
- *         and then releases a memory block
- */
-void proc2(void)
-{
+void proc3(void){
 	int i = 0;
-	int ret_val = 20;
-	void *p_mem_blk;
+	int status = 0;
+	void* mem_ptr[100];
+	int testAlloc = 5;
+	int testPassed = 1;
 	
-	p_mem_blk = request_memory_block();
-	set_process_priority(PID_P2, MEDIUM);
-	while ( 1) {
-		if ( i != 0 && i%5 == 0 ) {
-			uart0_put_string("\n\r");
-			ret_val = release_memory_block(p_mem_blk);
-#ifdef DEBUG_0
-			printf("proc2: ret_val=%d\n", ret_val);
-#endif /* DEBUG_0 */
-			if ( ret_val == -1 ) {
-				break;
-			}
+	add_to_order(3);
+	
+	// Hog all the 100 memory blocks
+	for (i = 0; i < 100; i++) {
+		mem_ptr[i] = request_memory_block();
+		if (mem_ptr[i] == NULL) {
+			testPassed = 0;
 		}
-		uart0_put_char('0' + i%10);
-		i++;
 	}
-	uart0_put_string("proc2: end of testing\n\r");
-	set_process_priority(PID_P2, LOWEST);
-	while ( 1 ) {
+	
+	//test an invalid release
+	status = release_memory_block((void*)1);
+	if (status != RTX_ERR) {
+		testPassed = 0;
+	}
+	
+	submit_test("3", testPassed);
+	testPassed = 1;
+	
+	release_processor(); //should keep us in proc3 since this is the only HIGH process
+	
+	add_to_order(3);
+	submit_test("4", 1); //check_order() alone will decide whether this passed
+	
+	//set self to LOWEST so something else can run (it will be proc1, which is MEDIUM)
+	set_process_priority(3, LOWEST);
+	
+	//proc 3 is back.
+	testPassed = 1;
+	add_to_order(3);
+	
+	//by releasing a block, P1 will become unblocked.
+	//P1 and P3 are HIGH, P2 is MEDIUM. P1 takes over.
+	release_memory_block(mem_ptr[0]);
+	
+	//back in P3.
+	add_to_order(3);
+	testPassed = 1;
+	
+	for (i = 1; i < 100; i++) {
+		status = release_memory_block(mem_ptr[i]);
+		if (status != RTX_OK) testPassed = 0;
+	}
+	
+	//releasing should never have pre-empted.
+	add_to_order(3);
+	submit_test("8", testPassed);
+	
+	//end of process. Switch to P2.
+	set_process_priority(3, LOWEST);
+	
+	while(1) {
 		release_processor();
 	}
 }
 
-void proc3(void)
-{
-	int i=0;
+
+void proc4(void){
+	int i = 0;
+	int status = 0;
+	void *mem_ptr[40];
+	void *surplus_ptr = NULL;
 	
+
+	
+
+	
+
+	
+
 	while(1) {
-		if ( i < 2 ) {
-			uart0_put_string("proc3: \n\r");
-		}
 		release_processor();
-		i++;
 	}
 }
 
-void proc4(void)
-{
-	int i=0;
+void proc5(void){
+	int status;
+
 	
+	
+	
+
 	while(1) {
-		if ( i < 2 ) {
-			uart0_put_string("proc4: \n\r");
-		}
 		release_processor();
-		i++;
 	}
 }
-void proc5(void)
-{
-	int i=0;
+
+void proc6(void){
+	void *mem_ptr[50];
+	int status;
+	int i = 0;
+	
+
+	
+	
 	
 	while(1) {
-		if ( i < 2 )  {
-			uart0_put_string("proc5: \n\r");
-		}
 		release_processor();
-		i++;
-	}
-}
-void proc6(void)
-{
-	int i=0;
-	
-	while(1) {
-		if ( i < 2 )  {
-			uart0_put_string("proc6: \n\r");
-		}
-		release_processor();
-		i++;
 	}
 }
