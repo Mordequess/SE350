@@ -1,17 +1,20 @@
 #include "k_iprocess.h"
+#include "rtx.h"
 
-/*
-The message (in the memory block pointed to by the second parameter) 
-will be sent to the destination process (process_id) after the expiration
-of the delay (timeout, given in millisecond units).
-*/
-int k_delayed_send(int process_id, void *message_envelope, int delay) {
+#ifdef DEBUG_0
+#include "printf.h"
+#endif
+
+#ifdef _DEBUG_HOTKEYS
+#include "printf.h"
+#endif 
+
+
+
+void timer_i_process(void) {
 	
+	__disable_irq();
 	
-}
-
-
-void timer_i_process() {
 	/*
 	// get pending requests
 	while ( pending messages to i-process ) {
@@ -24,13 +27,28 @@ void timer_i_process() {
 		send_message ( target_pid , env ) ;
 	}
 	*/
-}
-
-
-void uart0_i_process() {
 	
+	
+	__enable_irq();
 }
 
-void init_i_processes() {
+void uart_i_process(void) {
+	
+	__disable_irq();
+	
+	
+	
+	
+	#ifdef _DEBUG_HOTKEYS
+	
+	
+	
+	
+	#endif
+	
+	
+	
+	
+	__enable_irq();
 	
 }

@@ -1,12 +1,3 @@
-/**
- * @file:   k_process.h
- * @brief:  process management hearder file
- * @author: Yiqing Huang
- * @author: Thomas Reidemeister
- * @date:   2014/01/17
- * NOTE: Assuming there are only two user processes in the system
- */
-
 #ifndef K_PROCESS_H_
 #define K_PROCESS_H_
 

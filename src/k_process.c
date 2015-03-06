@@ -1,5 +1,6 @@
 #include "k_process.h"
-
+#include "k_iprocess.h"
+#include "k_system_proc.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -16,12 +17,9 @@ PROC_INIT g_proc_table[NUM_PROCESSES];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 
-
-
 //Null process
 void null_process() {
 	while (1) {
-		//printf("Inside null process");
 		release_processor();
 	}
 }
@@ -38,12 +36,43 @@ void process_init()
 	set_test_procs();
 
 	//NULL process
-	g_proc_table[0].m_pid = 0;
-	g_proc_table[0].m_stack_size = STACK_SIZE;
-	g_proc_table[0].mpf_start_pc = &null_process;
-	g_proc_table[0].m_priority = NULL_PRIORITY;
+	g_proc_table[PID_NULL].m_pid = PID_NULL;
+	g_proc_table[PID_NULL].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_NULL].mpf_start_pc = &null_process;
+	g_proc_table[PID_NULL].m_priority = NULL_PRIORITY;
+	
+	//Timer iprocess
+	g_proc_table[PID_TIMER].m_pid = PID_TIMER;
+	g_proc_table[PID_TIMER].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_TIMER].mpf_start_pc = &timer_i_process;
+	g_proc_table[PID_TIMER].m_priority = HIGH;
+	
+	//Uart iprocess
+	g_proc_table[PID_UART].m_pid = PID_UART;
+	g_proc_table[PID_UART].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_UART].mpf_start_pc = &uart_i_process;
+	g_proc_table[PID_UART].m_priority = HIGH;
+	
+	//KCD process
+	g_proc_table[PID_KCD].m_pid = PID_KCD;
+	g_proc_table[PID_KCD].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_KCD].mpf_start_pc = &kcd_proc;
+	g_proc_table[PID_KCD].m_priority = HIGH;
+	
+	//CRT process
+	g_proc_table[PID_CRT].m_pid = PID_CRT;
+	g_proc_table[PID_CRT].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_CRT].mpf_start_pc = &crt_proc;
+	g_proc_table[PID_CRT].m_priority = HIGH;
+	
+	//Wall clock process
+	g_proc_table[PID_UART].m_pid = PID_UART;
+	g_proc_table[PID_UART].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_UART].mpf_start_pc = &wall_clock_proc;
+	g_proc_table[PID_UART].m_priority = HIGH;
 
-	for (i = 1; i < NUM_PROCESSES; i++ ) {
+	//For the six test processes
+	for (i = 1; i <= NUM_TEST_PROCS; i++ ) {
 		g_proc_table[i].m_pid = g_test_procs[i-1].m_pid;
 		g_proc_table[i].m_stack_size = g_test_procs[i-1].m_stack_size;
 		g_proc_table[i].mpf_start_pc = g_test_procs[i-1].mpf_start_pc;
@@ -53,6 +82,12 @@ void process_init()
 	/* initilize exception stack frame (i.e. initial context) for each process */
 	for (i = 0; i < NUM_PROCESSES; i++ ) {
 		int j;
+		
+		//avoid modifying procs that don't appear in P1 and P2
+		if (i > PID_P6 && i < PID_WALL_CLOCK) {
+			continue;
+		}
+
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
 		(gp_pcbs[i])->m_state = NEW;
@@ -68,7 +103,7 @@ void process_init()
 
 	//set up ready queue with all processes
 	//note: does not change state, they all still count as NEW
-	for ( i = 0; i < NUM_PROCESSES; i++ ) {
+	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		enqueue(&g_ready_queue, gp_pcbs[i]);
 	}
 	
@@ -87,7 +122,6 @@ void process_init()
  *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
  *      No other effect on other global variables.
  */
-
 pcb *scheduler(void){
 	pcb* next;
 	//If process is running, find something to swap it with
@@ -113,7 +147,7 @@ pcb *scheduler(void){
  *      No other effect on other global variables.
  */
 int process_switch(pcb *p_pcb_old) {
-	//THE CODE BELOW IS THE GITHUB CODE.
+
 	PROC_STATE_E state;
 	
 	state = gp_current_process->m_state;
@@ -226,7 +260,8 @@ int k_get_process_priority(int process_id) {
 	pcb* p_pcb_param = get_pcb_pointer_from_process_id(process_id);
 	
 	//For invalid process_id out of range, return RTX_ERR
-	if (process_id > PID_P6 || process_id < PID_NULL) {
+	//For P2, valid processes are 0-6 and then 11-15
+	if (process_id < PID_NULL || process_id > PID_UART || (process_id > PID_P6 && process_id < PID_WALL_CLOCK)) {
 		return RTX_ERR;
 	}
 
@@ -242,10 +277,14 @@ int k_get_process_priority(int process_id) {
 
 // ----------- HELPER FUNCTIONS BEGIN HERE ------------------------------------
 
+pcb *get_current_process() {
+	return gp_current_process;
+}
+
 pcb *get_pcb_pointer_from_process_id(int process_id) {
 	
 	//invalid process_id check
-	if (process_id < 0 || process_id > 6) {
+	if (process_id < PID_NULL || process_id > PID_UART) {
 		return NULL;
 	}
 	

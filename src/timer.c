@@ -97,6 +97,15 @@ uint32_t timer_init(uint8_t n_timer)
  *       push and pop instructions in the assembly routine. 
  *       The actual c_TIMER0_IRQHandler does the rest of irq handling
  */
+
+/* From LEARN notes
+save the context of the current_process ;
+switch the current_process with timer_i_process ;
+load the timer_i_process context ;
+call the timer_i_process C function ;
+invoke the scheduler to pick next to run process ;
+restore the context of the newly picked process ;
+*/
 __asm void TIMER0_IRQHandler(void)
 {
 	PRESERVE8
@@ -114,4 +123,6 @@ void c_TIMER0_IRQHandler(void)
 	LPC_TIM0->IR = BIT(0);  
 	
 	g_timer_count++ ;
+	
+	
 }
