@@ -101,9 +101,10 @@ void process_init()
 		(gp_pcbs[i])->mp_sp = sp;
 	}
 
-	//set up ready queue with all the test processes
-	for ( i = 0; i <= NUM_TEST_PROCS; i++ ) {
-		enqueue_r(gp_pcbs[i]);
+	//set up ready queue with all processes
+	//note: does not change state, they all still count as NEW
+	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+		enqueue(&g_ready_queue, gp_pcbs[i]);
 	}
 	
 #ifdef DEBUG_0  
@@ -126,12 +127,12 @@ pcb *scheduler(void){
 	//If process is running, find something to swap it with
 	if (gp_current_process != NULL) {
 		if (gp_current_process->m_state == READY) {
-			enqueue_r(gp_current_process);
+			enqueue(&g_ready_queue, gp_current_process);
 		}
-		else enqueue_b(gp_current_process);
+		else enqueue(&g_blocked_queue, gp_current_process);
 	}
 	
-	next = dequeue_r(); //if none are ready, defaults to null process
+	next = dequeue(&g_ready_queue); //if none are ready, defaults to null process
 	//next->m_state = RUNNING;
 	return next;
 }
@@ -234,23 +235,21 @@ int k_set_process_priority(int process_id, int priority) {
 	}
 	
 	pcb_modified_process->m_priority = priority;
-	
+
 	//Since priority has changed, we need to move the process to another queue.
-	//There will be different queues depending on whether it is ready/new or blocked
+	//There will be different queues depending on whether it is ready/new, blocked, or the active process
 	if (pcb_modified_process->m_state == READY || pcb_modified_process->m_state == NEW) {
-		remove_queue_node_r(pcb_modified_process);
-		enqueue_r(pcb_modified_process);
+		remove_queue_node(&g_ready_queue, pcb_modified_process);
+		enqueue(&g_ready_queue, pcb_modified_process);
 	} else if (pcb_modified_process->m_state == BLOCKED) {
-		remove_queue_node_b(pcb_modified_process);
-		enqueue_b(pcb_modified_process);
+		remove_queue_node(&g_blocked_queue, pcb_modified_process);
+		enqueue(&g_blocked_queue, pcb_modified_process);
 	} else if (pcb_modified_process->m_state == RUNNING) {
 		pcb_modified_process->m_state = READY;
 	}
 	
 	//Since priority was modified, we need to pre-empt
-	if (pcb_modified_process->m_priority <= gp_current_process->m_priority){
-		k_release_processor();
-	}
+	k_release_processor();
 	
 	return RTX_OK;
 }
@@ -300,9 +299,9 @@ void block_current_process(void) {
 
 //Tells processor to switch to the highest blocked process. It is no longer blocked.
 int unblock_and_switch_to_blocked_process(void) {
-	pcb* processToSwitchTo = dequeue_b();
+	pcb* processToSwitchTo = dequeue(&g_blocked_queue);
 	processToSwitchTo->m_state = READY;
-	enqueue_r(processToSwitchTo);
+	enqueue(&g_ready_queue, processToSwitchTo);
 	
 	gp_current_process->m_state = READY;
 	k_release_processor();
@@ -315,20 +314,20 @@ int unblock_and_switch_to_blocked_process(void) {
 // ------------QUEUE FUNCTIONS ------------------------------------------------
 
 //Add the node to the tail end of the queue
-void enqueue_r(pcb* element) {
-	pcb* queue = g_ready_queue;
+void enqueue(pcb** targetQueue, pcb* element) {
+	pcb* queue = *targetQueue;
 
 	//check if empty
-	if (is_empty_r()) {
-		g_ready_queue = element;
+	if (is_empty(*targetQueue)) {
+		*targetQueue = element;
 		element->mp_next = NULL;
 		return;
 	}
 
 	//compare to first item in queue
-	if (element->m_priority < g_ready_queue->m_priority){
-		element->mp_next = g_ready_queue;
-		g_ready_queue = element;
+	if (element->m_priority < (*targetQueue)->m_priority){
+		element->mp_next = *targetQueue;
+		*targetQueue = element;
 		return;
 	}
 
@@ -343,10 +342,10 @@ void enqueue_r(pcb* element) {
 }
 
 //Remove and return a node from the front end of the queue
-pcb* dequeue_r() {
-	if (!is_empty_r()) {
-		pcb* element = g_ready_queue;
-		g_ready_queue = g_ready_queue->mp_next;
+pcb* dequeue(pcb** targetQueue) {
+	if (!is_empty(*targetQueue)) {
+		pcb* element = *targetQueue;
+		*targetQueue = (*targetQueue)->mp_next;
 		element->mp_next = NULL;
 		return element;
 	}
@@ -355,12 +354,12 @@ pcb* dequeue_r() {
 
 //Removes a node from the queue, regardless of its position
 //The input parameter asks for the contents and not for the queue_node
-void remove_queue_node_r(pcb* element) {
-	pcb* queue = g_ready_queue;
+void remove_queue_node(pcb** targetQueue, pcb* element) {
+	pcb* queue = *targetQueue;
 
 	//compare to first item in queue
-	if (g_ready_queue == element){
-		g_ready_queue = g_ready_queue->mp_next;
+	if (*targetQueue == element){
+		*targetQueue = (*targetQueue)->mp_next;
 	}
 
 	//iterate through to find what to remove
@@ -375,76 +374,8 @@ void remove_queue_node_r(pcb* element) {
 
 //Emptiness check.
 //Will return 1 if empty and 0 if not.
-U32 is_empty_r() {
-	if (g_ready_queue == NULL) {
-		return 1;
-	} else {
-		return 0;
-	}
-}
-
-//Add the node to the tail end of the queue
-void enqueue_b(pcb* element) {
-	pcb* queue = g_blocked_queue;
-
-	//check if empty
-	if (is_empty_b()) {
-		g_blocked_queue = element;
-		element->mp_next = NULL;
-		return;
-	}
-
-	//compare to first item in queue
-	if (g_blocked_queue->m_priority < element->m_priority){
-		element->mp_next = g_blocked_queue;
-		g_blocked_queue = element;
-		return;
-	}
-
-	//iterate through to find where to insert
-	while (queue->mp_next->m_priority <= element->m_priority) {
-		queue = queue->mp_next;
-	}
-
-	//insert
-	element->mp_next = queue->mp_next;
-	queue->mp_next = element;
-}
-
-//Remove and return a node from the front end of the queue
-pcb* dequeue_b() {
-	if (!is_empty_b()) {
-		pcb* element = g_blocked_queue;
-		g_blocked_queue = g_blocked_queue->mp_next;
-		return element;
-	}
-	return NULL; //null if nothing to dequeue
-}
-
-//Removes a node from the queue, regardless of its position
-//The input parameter asks for the contents and not for the queue_node
-void remove_queue_node_b(pcb* element) {
-	pcb* queue = g_blocked_queue;
-
-	//compare to first item in queue
-	if (g_blocked_queue == element){
-		g_blocked_queue = g_blocked_queue->mp_next;
-	}
-
-	//iterate through to find what to remove
-	while (queue->mp_next != element) {
-		queue = queue->mp_next;
-	}
-
-	//remove
-	queue->mp_next = element->mp_next;
-	element->mp_next = NULL;
-}
-
-//Emptiness check.
-//Will return 1 if empty and 0 if not.
-U32 is_empty_b() {
-	if (g_blocked_queue == NULL) {
+U32 is_empty(pcb* targetQueue) {
+	if (targetQueue == NULL) {
 		return 1;
 	} else {
 		return 0;
