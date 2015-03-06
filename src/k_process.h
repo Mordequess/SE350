@@ -25,15 +25,10 @@
 
 /* -------- QUEUES FOR PROCESSES -------- */
 
-void enqueue_r(pcb* element);
-pcb* dequeue_r(void);
-void remove_queue_node_r(pcb* element);
-U32 is_empty_r(void);
-
-void enqueue_b(pcb* element);
-pcb* dequeue_b(void);
-void remove_queue_node_b(pcb* element);
-U32 is_empty_b(void);
+void enqueue(pcb** targetQueue, pcb* element);
+pcb* dequeue(pcb** targetQueue);
+void remove_queue_node(pcb** targetQueue, pcb* element);
+U32 is_empty(pcb* targetQueue);
 
 /* ----- Functions ----- */
 
