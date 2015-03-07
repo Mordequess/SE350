@@ -54,19 +54,19 @@ void process_init()
 	g_proc_table[PID_UART].mpf_start_pc = &uart_i_process;
 	g_proc_table[PID_UART].m_priority = HIGH;
 	
-	//KCD process
+	//KCD process (always HIGH)
 	g_proc_table[PID_KCD].m_pid = PID_KCD;
 	g_proc_table[PID_KCD].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_KCD].mpf_start_pc = &kcd_proc;
 	g_proc_table[PID_KCD].m_priority = HIGH;
 	
-	//CRT process
+	//CRT process (always HIGH)
 	g_proc_table[PID_CRT].m_pid = PID_CRT;
 	g_proc_table[PID_CRT].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_CRT].mpf_start_pc = &crt_proc;
 	g_proc_table[PID_CRT].m_priority = HIGH;
 	
-	//Wall clock process
+	//Wall clock process (always HIGH)
 	g_proc_table[PID_UART].m_pid = PID_UART;
 	g_proc_table[PID_UART].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_UART].mpf_start_pc = &wall_clock_proc;
@@ -102,10 +102,13 @@ void process_init()
 		(gp_pcbs[i])->mp_sp = sp;
 	}
 
-	//set up ready queue with all processes
+	//set up ready queue
+	//It contains all test processes as well as wall, kcd, and crt
 	//note: does not change state, they all still count as NEW
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
-		enqueue(&g_ready_queue, gp_pcbs[i]);
+	for ( i = 0; i < NUM_PROCESSES; i++ ) {
+		if ((i >= PID_P1 && i <= PID_P6) || (i == PID_WALL_CLOCK) || (i == PID_CRT) || (i == PID_UART) ) {
+			enqueue(&g_ready_queue, gp_pcbs[i]);
+		}
 	}
 	
 #ifdef DEBUG_0  

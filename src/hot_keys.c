@@ -5,9 +5,11 @@
 #include "printf.h"
 #include "k_process.h"
 
+/*
+Prints the correct queue depending on the hotkey inputted
+If hotkey is invalid, nothing will happen.
+*/
 void process_hot_key(char c) {
-	
-	#ifdef _DEBUG_HOTKEYS
 	
 	switch(c) {
 		case DEBUG_HOTKEY_1:
@@ -26,9 +28,6 @@ void process_hot_key(char c) {
 			printf("====== END OF BLOCKED ON RECEIVE QUEUE =======\n\r");
 			break;
 	}
-	
-	#endif
-	
 }
 
 /*
@@ -50,7 +49,5 @@ void print_queue(pcb* head) {
 Prints the PID and priority of a process.
 */
 void print_process(pcb *proc) {
-	
 	printf("Process Id = %d, Priority = %d\n\r", proc->m_pid, proc->m_priority);
-	
 }

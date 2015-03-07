@@ -2,20 +2,21 @@
 #include "uart_polling.h"
 #include "usr_proc.h"
 #include "util.h"
+#include "k_ipc.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
 #endif 
 
-const int RUN_LENGTH = 5;
+const int RUN_LENGTH = 18;
 int expected_proc_order[] = 
-{1, 2, 3, 3, 1, 1, 2, 2, 2, 3, 1, 3, 3, 2
-
+{1, 2, 3, 3, 1, 1, 2, 2, 2, 3, 1, 3, 3, 2,
+4, 4, 5, 4
 };
 int actual_proc_order[RUN_LENGTH];
 int current_index = 0;
 
-const int TOTAL_TESTS = 8;
+const int TOTAL_TESTS = 10;
 int total_passed_tests = 0;
 int total_failed_tests = 0;
 
@@ -207,11 +208,10 @@ void proc2(void){
 	
 }
 
-void proc3(void){
+void proc3(void) {
 	int i = 0;
 	int status = 0;
 	void* mem_ptr[100];
-	int testAlloc = 5;
 	int testPassed = 1;
 	
 	add_to_order(3);
@@ -272,12 +272,34 @@ void proc3(void){
 
 
 void proc4(void){
-
 	
+	msgbuf* message;
+	int sender_id = 5;
+	int testPassed = 1;
 
+	//P1, P2, and P3 should be finished by the time P4 starts
+	add_to_order(4);
 	
+	//should not pre-empt at any point. Should remain inside P4.
+	set_process_priority(4, HIGH);
+	set_process_priority(5, MEDIUM);
+	set_process_priority(6, MEDIUM);
+	
+	add_to_order(4);
+	submit_test("9", testPassed);
 
+	//waiting for message from 5. Block and go to P5.
+	message = receive_message(&sender_id);
+
+	//No longer blocked.
+	add_to_order(4);
 	
+	testPassed = 1;
+	if (message->mtype != DEFAULT || (message->mtext[0] != 'Q')) {
+		testPassed = 0;
+	}
+	
+	submit_test("10", testPassed);
 
 	
 
@@ -287,9 +309,16 @@ void proc4(void){
 }
 
 void proc5(void){
-
-
+	int testPassed = 1;
 	
+	msgbuf* message = request_memory_block();
+	message->mtype = DEFAULT;
+	message->mtext[0] = 'Q';
+	
+	add_to_order(5);
+	
+	//should pre-empt to 4.
+	send_message(4, message);
 	
 	
 
@@ -299,7 +328,7 @@ void proc5(void){
 }
 
 void proc6(void){
-
+	int testPassed = 1;
 	
 
 	

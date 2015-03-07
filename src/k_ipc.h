@@ -6,10 +6,10 @@
 #define DEFAULT 0 /* A general purpose message.*/
 #define KCD_REG 1 /* A message to register a command with the Keyboard Command Decoder Process */
 
-struct msgbuf {
+typedef struct msgbuf {
 	int mtype; /* user defined message type. One of the two constants above. */
 	char mtext[1]; /* body of the message */
-};
+} msgbuf;
 
 extern int k_send_message(int process_id, void* message_envelope);
 #define send_message(pid, env) _send_message((U32)k_send_message, pid, env)
