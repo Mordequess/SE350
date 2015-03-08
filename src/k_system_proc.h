@@ -16,8 +16,8 @@ void wall_clock_proc(void);
 
 //helper functions
 
-//parameter is a time in the form (0 = midnight) + (time = #seconds)
-char* time_to_hms(int sss);
+//outputs converted value to char* parameter
+void time_to_hms(int sss, char* target);
 
 //parameter is a time in the form (hh:mm:ss)
 int time_to_sss(char* hms);

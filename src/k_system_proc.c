@@ -154,25 +154,25 @@ void wall_clock_proc(void) {
 //helper functions
 
 //parameter is a time in the form (0 = midnight) + (time = #seconds)
-char* time_to_hms(int sss) {
+void time_to_hms(int sss, char* target) {
 	int t;
-	char hms[8];
+	char target[8];
 
 	t = sss / 3600;
-	hms[0] = (char)(((int)'0') + t/10);
-	hms[1] = (char)(((int)'0') + t%10);
-	hms[2] = ':';
+	target[0] = (char)(((int)'0') + t/10);
+	target[1] = (char)(((int)'0') + t%10);
+	target[2] = ':';
 
 	t = sss / 60;
-	hms[3] = (char)(((int)'0') + t/10);
-	hms[4] = (char)(((int)'0') + t%10);
-	hms[5] = ':';
+	target[3] = (char)(((int)'0') + t/10);
+	target[4] = (char)(((int)'0') + t%10);
+	target[5] = ':';
 
 	t = sss % 60;
-	hms[6] = (char)(((int)'0') + t/10);
-	hms[7] = (char)(((int)'0') + t%10);
+	target[6] = (char)(((int)'0') + t/10);
+	target[7] = (char)(((int)'0') + t%10);
 
-	return &hms[0];
+	return target;
 }
 
 //parameter is a time in the form (hh:mm:ss)
