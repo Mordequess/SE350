@@ -12,6 +12,7 @@ int g_number_commands_registered = 0;
 /* The process for the keyboard command decoder */
 void kcd_proc(void) {
 	
+	int sender_id;
 	msgbuf* message;
 	msgbuf* message_to_dispatch;
 	int i = 0;
@@ -19,7 +20,7 @@ void kcd_proc(void) {
 	while(1) {
 		
 		//will block the process at first
-		message = receive_message(NULL);
+		message = receive_message(&sender_id);
 	
 		if (message->mtype == DEFAULT) { 			//handle a command
 			
@@ -61,13 +62,14 @@ void kcd_proc(void) {
 
 void crt_proc(void) {
 	
+	int sender_id;
 	msgbuf *message;
 	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *) LPC_UART0;
 	
 	while(1) {
 		
 		//will block the process at first
-		message = receive_message(NULL);
+		message = receive_message(&sender_id);
 		
 		//if message is of a CRT request type, send to uart iproc
 		if (message->mtype == CRT_DISP) {
@@ -82,6 +84,8 @@ void crt_proc(void) {
 }
 
 void wall_clock_proc(void) {
+	
+	int sender_id = -1;
 	
 	char RESET = 'R';
 	char TERMINATE = 'T';
@@ -112,7 +116,7 @@ void wall_clock_proc(void) {
 	
 	while(1) {
 		
-		int sender = PID_WALL_CLOCK;
+		sender = -1;
 		
 		message = receive_message(&sender);
 		

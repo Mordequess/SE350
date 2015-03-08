@@ -327,6 +327,7 @@ void proc4(void){
 // }
 
 /* ~~~~~~~ KELLY TESTING DEF OF PROC6 ~~~~~~~~ */
+/*
 void proc5(void) {
 	void *p_msg;
 	msgbuf message;
@@ -344,6 +345,7 @@ void proc5(void) {
 	}
 		
 }
+*/
 
 /* ~~~~~~~ ORIGINAL DEFINITION OF PROC6 ~~~~~~~ */
 // void proc6(void){
@@ -355,6 +357,7 @@ void proc5(void) {
 // }
 
 /* ~~~~~~~ KELLY TESTING DEF OF PROC6 ~~~~~~~~ */
+/*
 void proc6(void) {
 	void *my_blk;
 	msgbuf secret_message = { 0, 6, NULL, "you are beautiful in every single way\n\r                       "};
@@ -375,3 +378,4 @@ void proc6(void) {
 		release_processor();
 	}
 }
+*/
