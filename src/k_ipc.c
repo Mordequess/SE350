@@ -17,18 +17,15 @@ int k_send_message(int process_id, void *message_envelope) {
 }
 
 void *k_receive_message(int *sender_id) {
+	int current_process = get_procid_of_current_process();
+	
 	__disable_irq();
-	/*
-	atomic ( on ) ;
-	while ( current_process msg_queue is empty ) {
-		set current_process state to BLOCKED_ON_RECEIVE ;
-		release_processor ( ) ;
+	while (!m_any_messages(g_message_queue, current_process)){//} current_process msg_queue is empty ) {
+		get_pcb_pointer_from_process_id(current_process)->m_state = BLOCKED_ON_RECEIVE ;
+		release_processor() ;
 	}
-	msg_t * env = dequeue current_process msg queue ;
-	atomic ( off ) ;
-	return env ;
-	*/
 	__enable_irq();
+	return RTX_OK; //todo: is this what we want?
 }
 
 /*
