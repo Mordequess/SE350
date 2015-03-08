@@ -5,16 +5,10 @@
 #include "k_rtx.h"
 #include "k_process.h"
 
-#define DEFAULT 0 /* A general purpose message.*/
-#define KCD_REG 1 /* A message to register a command with the Keyboard Command Decoder Process */
-#define KCD_DISPATCH 2 /* A message to dispatch a registered KCD command to a process */
-#define CRT_DISP 3			/* A message intended for the CRT process */
-#define WALL_CLOCK_TICK 4 /* A message that updates the wall clock by one second */
-
 /* -------- QUEUES FOR MESSAGES -------- */
 
 void m_enqueue(int sender_id, message* element);
-message* m_dequeue(int destination_id, int sender_id);
+message* m_dequeue(int destination_id);
 void m_remove_queue_node(int sender_id, message* element);
 U32 m_is_empty(int sender_id);
 U32 m_any_messages_from_sender(int destination_id, int sender_id);

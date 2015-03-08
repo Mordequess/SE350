@@ -330,11 +330,12 @@ void proc4(void){
 void proc5(void) {
 	void *p_msg;
 	msgbuf message;
+	int* sender;
 	// i want to receive a message from proc 6. once i do, i want to uart1putstring the message
 	// and then... idk set my own prio low orsomething
 	uart0_put_string("kellyPROC5: START\n\r");
 	
-	p_msg = receive_message(6); // get a special message from process 6!!
+	p_msg = receive_message(sender); // get a special message!! (we want it to be from 6)
 	message = *((msgbuf *)p_msg); // ?/ doesthis makesense
 	uart0_put_string(message.mtext);
 	
@@ -357,7 +358,7 @@ void proc5(void) {
 /* ~~~~~~~ KELLY TESTING DEF OF PROC6 ~~~~~~~~ */
 void proc6(void) {
 	void *my_blk;
-	msgbuf secret_message = { 0, 6, NULL, "you are beautiful in every single way\n\r                       "};
+	msgbuf secret_message = { DEFAULT, 'Q'};//msgbuf contains a type anda character
 	// i want to request a block, i want to put a msgbuf in it, i want to send it to proc5 (and then set proc5 to higher prio so it runs)
 	uart0_put_string("kellyPROC6: START\n\r");
 	
