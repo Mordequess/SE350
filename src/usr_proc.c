@@ -8,10 +8,10 @@
 #include "printf.h"
 #endif 
 
-const int RUN_LENGTH = 18;
+const int RUN_LENGTH = 27;
 int expected_proc_order[] = 
 {1, 2, 3, 3, 1, 1, 2, 2, 2, 3, 1, 3, 3, 2,
-4, 4, 5, 4
+ 4, 4, 5, 4, 5, 4, 6, 4, 5, 6, 4, 5, 5
 };
 int actual_proc_order[RUN_LENGTH];
 int current_index = 0;
@@ -274,7 +274,7 @@ void proc3(void) {
 void proc4(void){
 	
 	msgbuf* message;
-	int sender_id = 5;
+	int sender_id = NULL; //storage for message sender
 	int testPassed = 1;
 
 	//P1, P2, and P3 should be finished by the time P4 starts
@@ -301,7 +301,24 @@ void proc4(void){
 	
 	submit_test("10", testPassed);
 
-	
+	//jump to 5
+	set_process_priority(5, HIGH);
+
+	//5 will get blocked on recieve
+	add_to_order(4);
+	set_process_priority(6, HIGH);
+
+	//6 will get blocked on memory
+	add_to_order(4);
+	message->mtext[0] = 'R';
+
+	//should pre-empt on send
+	send_message(5, message);
+
+	//6 is being blocked
+	add_to_order(4);
+	submit_test("12", testPassed);
+	set_process_priority(4, LOWEST);
 
 	while(1) {
 		release_processor();
@@ -310,7 +327,9 @@ void proc4(void){
 
 /* ~~~~~~~ ORIGINAL DEFINITION OF PROC5 ~~~~~~~ */
 void proc5(void){
+	void* mem_ptr;
 	int testPassed = 1;
+	int sender_id = NULL;
 	
 	msgbuf* message = request_memory_block();
 	message->mtype = DEFAULT;
@@ -321,62 +340,63 @@ void proc5(void){
 	//should pre-empt to 4.
 	send_message(4, message);
 
+	//back to 5. time to test blocked on memory & blocked on receive
+	add_to_order(5);
+
+	//request one memblock to block p6
+	mem_ptr = request_memory_block();
+
+
+	message = receive_message(&sender_id);
+	if (sender_id != 4 || message->mtext[0] != 'R') {
+		testPassed = 0;
+	}
+	else release_memory_block(mem_ptr);  //will jump back to p6, who is blocked on memory
+
+	add_to_order(5);
+	submit_test("13", testPassed);
+
+	//delayed send to selfy
+	message->mtext[0] = 'S';
+	delayed_send(5, message, 1000);
+	message = receive_message(&sender_id);
+
+	add_to_order(5);
+	if (sender_id != 5 || message->mtext[0] != 'S') {
+		testPassed = 0;
+	}
+
+	//submit test, should go on to p7 (or end)
+	submit_test("14", testPassed);
+	set_process_priority(5, LOWEST);
+
 	while(1) {
 		release_processor();
 	}
 }
 
-/* ~~~~~~~ KELLY TESTING DEF OF PROC6 ~~~~~~~~ */
-/*
-void proc5(void) {
-	void *p_msg;
-	msgbuf message;
-	int* sender;
-	// i want to receive a message from proc 6. once i do, i want to uart1putstring the message
-	// and then... idk set my own prio low orsomething
-	uart0_put_string("kellyPROC5: START\n\r");
-	
-	p_msg = receive_message(sender); // get a special message!! (we want it to be from 6)
-	message = *((msgbuf *)p_msg); // ?/ doesthis makesense
-	uart0_put_string(message.mtext);
-	
-	while(1) {
-		uart0_put_string("5 is done\n\r");
-		release_processor();
-	}
-		
-}
-*/
-
-/* ~~~~~~~ ORIGINAL DEFINITION OF PROC6 ~~~~~~~ */
 void proc6(void){
+	int i;
+	void* mem[100];
 	int testPassed = 1;
-	
-	while(1) {
-		release_processor();
-	}
-}
 
-/* ~~~~~~~ KELLY TESTING DEF OF PROC6 ~~~~~~~~ */
-/*
-void proc6(void) {
-	void *my_blk;
-	msgbuf secret_message = { DEFAULT, 'Q'};//msgbuf contains a type anda character
-	// i want to request a block, i want to put a msgbuf in it, i want to send it to proc5 (and then set proc5 to higher prio so it runs)
-	uart0_put_string("kellyPROC6: START\n\r");
-	
-	my_blk = request_memory_block();
-	//secret_message = { 0, 6, "you are beautiful in every single way\n\r                       " }; // maybe send_message should really take care of this.
-	//secret_message.msource = 6; // now that i'm writing this, it seems dumb. can you send ransom messages?
-	//secret_message.mtext = "you are beautiful in every single way\n\r                       "; //41 + 23 spaces????
-	my_blk = &secret_message; //uh... i get what i want to do...but...
-	send_message(5, my_blk);
-	
-	set_process_priority(6, LOW); // set me to low
-	
+	add_to_order(6);
+	//will get blocked on memory
+	for (i = 0; i < 99; ++i) {
+		mem[i] = request_memory_block();
+	}
+
+	mem[99] = request_memory_block();
+	add_to_order(6);
+
+	for (i = 0; i < 100; ++i) {
+		release_memory_block(mem[i]);
+	}
+
+	submit_test("11", testPassed);
+	set_process_priority(6, LOWEST);
+
 	while(1) {
-		uart0_put_string("6 is done\n\r");
 		release_processor();
 	}
 }
-*/

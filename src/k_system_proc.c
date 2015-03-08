@@ -180,7 +180,6 @@ void wall_clock_proc(void) {
 //parameter is a time in the form (0 = midnight) + (time = #seconds)
 void time_to_hms(int sss, char* target) {
 	int t;
-	char target[8];
 
 	t = sss / 3600;
 	target[0] = (char)(((int)'0') + t/10);
@@ -195,8 +194,6 @@ void time_to_hms(int sss, char* target) {
 	t = sss % 60;
 	target[6] = (char)(((int)'0') + t/10);
 	target[7] = (char)(((int)'0') + t%10);
-
-	return target;
 }
 
 //parameter is a time in the form (hh:mm:ss)
