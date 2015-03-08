@@ -87,9 +87,9 @@ void wall_clock_proc(void) {
 	
 	int sender_id = -1;
 	
-	char RESET = 'R';
-	char TERMINATE = 'T';
-	char SET = 'S';
+	const char RESET = 'R';
+	const char TERMINATE = 'T';
+	const char SET = 'S';
 	
 	msgbuf* message;
 	msgbuf* message_to_dispatch;
@@ -142,6 +142,30 @@ void wall_clock_proc(void) {
 		} else {
 			
 			//The message is one of the 3 commands (start, terminate, reset)
+			if (message->mtext[0] == '%%' && message->mtext[1] == 'W') {
+				
+				switch (message->mtext[2]) {
+					case RESET:
+						is_clock_running = 1;
+						current_clock_time = 0;
+						release_memory_block(message);
+						break;
+					case TERMINATE:
+						is_clock_running = 0;
+						current_clock_time = 0;
+						release_memory_block(message);
+						break;
+					case SET:
+						
+						is_clock_running = 1;
+						
+						//for %WS hh:mm:ss, skip straight to the date part.
+						current_clock_time = time_to_sss(&(message->mtext[4]));
+					
+						break;
+				}
+				
+			}
 			
 		}
 		

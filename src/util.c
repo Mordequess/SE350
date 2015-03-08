@@ -41,3 +41,11 @@ int strings_are_equal(char s1[], char s2[]) {
 	//if strings are equal, we would not have broken until the end
 	return (s1[i] == '\0' && s2[i] == '\0');
 }
+
+int str_len(char s[]) {
+	int i = 0;
+	while (s[i] != '\0') {
+		i++;
+	}
+	return i;
+}
