@@ -116,9 +116,9 @@ void wall_clock_proc(void) {
 	
 	while(1) {
 		
-		sender = -1;
+		sender_id = -1;
 		
-		message = receive_message(&sender);
+		message = receive_message(&sender_id);
 		
 		//emumerate through all clock commands
 		//act depending on the command given
@@ -149,4 +149,43 @@ void wall_clock_proc(void) {
 		
 	}
 	
+}
+
+//helper functions
+
+//parameter is a time in the form (0 = midnight) + (time = #seconds)
+char* time_to_hms(int sss) {
+	int t;
+	char hms[8];
+
+	t = sss / 3600;
+	hms[0] = (char)(((int)'0') + t/10);
+	hms[1] = (char)(((int)'0') + t%10);
+	hms[2] = ':';
+
+	t = sss / 60;
+	hms[3] = (char)(((int)'0') + t/10);
+	hms[4] = (char)(((int)'0') + t%10);
+	hms[5] = ':';
+
+	t = sss % 60;
+	hms[6] = (char)(((int)'0') + t/10);
+	hms[7] = (char)(((int)'0') + t%10);
+
+	return &hms[0];
+}
+
+//parameter is a time in the form (hh:mm:ss)
+int time_to_sss(char* hms) {
+	int t = 0;
+	t += (int)((char)hms[0]) * 36000;
+	t += (int)((char)hms[1]) * 3600;
+
+	t += (int)((char)hms[3]) * 600;
+	t += (int)((char)hms[4]) * 60;
+
+	t += (int)((char)hms[6]) * 10;
+	t += (int)((char)hms[7]);
+
+	return t;
 }
