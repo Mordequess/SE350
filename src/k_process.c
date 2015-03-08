@@ -133,11 +133,13 @@ pcb *scheduler(void){
 		if (gp_current_process->m_state == READY) {
 			enqueue(&g_ready_queue, gp_current_process);
 		}
+		else if (gp_current_process->m_state == BLOCKED_ON_RECEIVE) {
+			enqueue(&g_blocked_on_receive_queue, gp_current_process);
+		}	
 		else enqueue(&g_blocked_on_memory_queue, gp_current_process);
 	}
 	
 	next = dequeue(&g_ready_queue); //if none are ready, defaults to null process
-	//next->m_state = RUNNING;
 	return next;
 }
 
@@ -153,7 +155,7 @@ pcb *scheduler(void){
 int process_switch(pcb *p_pcb_old) {
 
 	PROC_STATE_E state;
-	
+	pcb* test_test = gp_current_process;
 	state = gp_current_process->m_state;
 
 	if (state == NEW) {
@@ -170,7 +172,7 @@ int process_switch(pcb *p_pcb_old) {
 
 	if (gp_current_process != p_pcb_old) {
 		if (state == READY){ 		
-			p_pcb_old->m_state = READY; 
+			//p_pcb_old->m_state = READY; 
 			p_pcb_old->mp_sp = (U32 *) __get_MSP(); // save the old process's sp
 			gp_current_process->m_state = RUNNING;
 			__set_MSP((U32) gp_current_process->mp_sp); //switch to the new proc's stack    
@@ -252,6 +254,7 @@ int k_set_process_priority(int process_id, int priority) {
 		remove_queue_node(&g_blocked_on_receive_queue, pcb_modified_process);
 		enqueue(&g_blocked_on_memory_queue, pcb_modified_process);
 	} else if (pcb_modified_process->m_state == RUNNING) {
+		//enqueue(&g_ready_queue, pcb_modified_process);
 		pcb_modified_process->m_state = READY;
 	}
 	
@@ -316,9 +319,25 @@ void block_current_process_on_memory(void) {
 	k_release_processor();
 }
 
+void block_current_process_on_receive(void) {
+	gp_current_process->m_state = BLOCKED_ON_RECEIVE;
+	k_release_processor();
+}
+
 //Tells processor to switch to the highest blocked-on-memory process. It is no longer blocked.
-int unblock_and_switch_to_blocked_process(void) {
+int unblock_and_switch_to_blocked_on_memory_process(void) {
 	pcb* processToSwitchTo = dequeue(&g_blocked_on_memory_queue);
+	processToSwitchTo->m_state = READY;
+	enqueue(&g_ready_queue, processToSwitchTo);
+	
+	gp_current_process->m_state = READY;
+	k_release_processor();
+	return RTX_OK;
+}
+
+//Tells processor to switch to the highest blocked-on-memory process. It is no longer blocked.
+int unblock_and_switch_to_blocked_on_receive_process(void) {
+	pcb* processToSwitchTo = dequeue(&g_blocked_on_receive_queue);
 	processToSwitchTo->m_state = READY;
 	enqueue(&g_ready_queue, processToSwitchTo);
 	
@@ -383,6 +402,7 @@ void remove_queue_node(pcb** targetQueue, pcb* element) {
 	//compare to first item in queue
 	if (*targetQueue == element){
 		*targetQueue = (*targetQueue)->mp_next;
+		return;
 	}
 
 	//iterate through to find what to remove

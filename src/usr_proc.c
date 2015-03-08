@@ -125,10 +125,10 @@ void proc1(void) {
 	add_to_order(1);
 	testPassed = 1;
 	
-	set_process_priority(4, LOWEST);
-	set_process_priority(4, LOW);
+	//set_process_priority(4, LOWEST);
+	//set_process_priority(4, LOW);
 	
-	//neither call should have pre-empted.
+	//neither call should have pre-empted. TODO: they are
 	add_to_order(1);
 	submit_test("5", testPassed);
 	

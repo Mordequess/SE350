@@ -25,9 +25,8 @@ int k_send_message(int destination_id, void *message_envelope) {
 
 	//check if receiver is waiting
 	if (receiving_proc->m_state == BLOCKED_ON_RECEIVE) {
-		receiving_proc->m_state = READY;
-		remove_queue_node(&g_blocked_on_receive_queue, receiving_proc);
-		enqueue(&g_ready_queue, receiving_proc);
+		__enable_irq();
+		unblock_and_switch_to_blocked_on_receive_process();
 	}
 
 	__enable_irq();
@@ -39,8 +38,8 @@ void* k_receive_message(int *sender_id) {
 	int current_process = get_procid_of_current_process();
 	__disable_irq();
 	while (m_is_empty(current_process)){//} current_process msg_queue is empty ) {
-		get_pcb_pointer_from_process_id(current_process)->m_state = BLOCKED_ON_RECEIVE ;
-		release_processor();
+		__enable_irq();
+		block_current_process_on_receive();
 	}
 	m = m_dequeue(current_process);
 	*sender_id = m->sender_id;

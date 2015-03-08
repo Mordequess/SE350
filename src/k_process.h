@@ -12,7 +12,7 @@
 /* ----- Definitions ----- */
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
-#define STACK_SIZE 0x500               /* stack size hardcoded as 0x100 in usr_proc */ //TODO: make it not
+#define STACK_SIZE 0x200               /* stack size hardcoded as 0x100 in usr_proc */ //TODO: make it not
 
 /* -------- QUEUES FOR PROCESSES -------- */
 
@@ -41,7 +41,9 @@ pcb *get_pcb_pointer_from_process_id(int);
 U32 is_a_more_important_process_ready(pcb* currentProcess);
 
 void block_current_process_on_memory(void);
-int unblock_and_switch_to_blocked_process(void);
+void block_current_process_on_receive(void);
+int unblock_and_switch_to_blocked_on_memory_process(void);
+int unblock_and_switch_to_blocked_on_receive_process(void);
 int get_procid_of_current_process(void);
 
 pcb* get_ready_queue(void);
