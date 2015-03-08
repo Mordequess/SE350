@@ -39,22 +39,22 @@ void kcd_proc(void) {
 					message_to_dispatch = request_memory_block();
 					message_to_dispatch->mtype = KCD_DISPATCH;
 					copy_string(message->mtext, message_to_dispatch->mtext);
-					
-					//TODO: send message. Need PID to send it to.
-					
+					send_message(g_registered_commands[i].process_id, message_to_dispatch);
 					break;
 					
 				}
-			}
-			
+			}	
 			
 		} else if (message->mtype == KCD_REG) {
 
-			
-				/*TODO: register a command. Use sender pid and mtext to fill the registered_command object*/
-			
+			//Populate the registered_command object
+			g_registered_commands[g_number_commands_registered].process_id = sender_id;
+			copy_string(message->mtext, g_registered_commands[g_number_commands_registered].command);
+			g_number_commands_registered++;
 			
 		}
+					
+		release_memory_block(message);
 	
 	}
 	
@@ -62,7 +62,7 @@ void kcd_proc(void) {
 
 void crt_proc(void) {
 	
-	int sender_id;
+	int sender_id = -1;
 	msgbuf *message;
 	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *) LPC_UART0;
 	
@@ -74,9 +74,11 @@ void crt_proc(void) {
 		//if message is of a CRT request type, send to uart iproc
 		if (message->mtype == CRT_DISP) {
 			send_message(PID_UART, message);
+			pUart->IER = IER_RBR | IER_THRE | IER_RLS;
+			pUart->THR = '\0';
 		}
 		
-		//release the memory
+		//release the memory from the original message
 		release_memory_block(message);
 		
 	}
@@ -92,7 +94,8 @@ void wall_clock_proc(void) {
 	const char SET = 'S';
 	
 	msgbuf* message;
-	msgbuf* message_to_dispatch;
+	msgbuf* delayed_message;
+	msgbuf* crt_message;
 	
 	int current_clock_time = 0;
 	int is_clock_running = 0;
@@ -113,15 +116,11 @@ void wall_clock_proc(void) {
 	copy_string("%WT", message->mtext);
 	send_message(PID_KCD, message);
 	
-	
 	while(1) {
 		
 		sender_id = -1;
 		
 		message = receive_message(&sender_id);
-		
-		//emumerate through all clock commands
-		//act depending on the command given
 		
 		if (message->mtype == WALL_CLOCK_TICK) {
 			
@@ -131,18 +130,25 @@ void wall_clock_proc(void) {
 				current_clock_time = 0;
 			}
 			
-			//TODO: print the new time
+			if (is_clock_running) {
+				//Send the new time string hh:mm:ss to CRT
+				crt_message = request_memory_block();
+				crt_message->mtype = CRT_DISP;
+				time_to_hms(current_clock_time, crt_message->mtext);
+				send_message(PID_CRT, crt_message);
+			}
 			
+			release_memory_block(message);
 			
 			//send an update message in 1000ms
-			message_to_dispatch = request_memory_block();
-			message_to_dispatch->mtype = WALL_CLOCK_TICK;
-			delayed_send(PID_WALL_CLOCK, message_to_dispatch, 1000);
+			delayed_message = request_memory_block();
+			delayed_message->mtype = WALL_CLOCK_TICK;
+			delayed_send(PID_WALL_CLOCK, delayed_message, 1000);
 			
 		} else {
 			
 			//The message is one of the 3 commands (start, terminate, reset)
-			if (message->mtext[0] == '%%' && message->mtext[1] == 'W') {
+			if (message->mtext[0] == '%' && message->mtext[1] == 'W') {
 				
 				switch (message->mtext[2]) {
 					case RESET:
@@ -162,14 +168,20 @@ void wall_clock_proc(void) {
 						//for %WS hh:mm:ss, skip straight to the date part.
 						current_clock_time = time_to_sss(&(message->mtext[4]));
 					
+						crt_message = request_memory_block();
+						crt_message->mtype = CRT_DISP;
+						time_to_hms(current_clock_time, crt_message->mtext);
+						send_message(PID_CRT, crt_message);
+					
+						//release the original message with the set command.
+						release_memory_block(message);
+					
 						break;
 				}
 				
 			}
 			
 		}
-		
-		
 		
 	}
 	
