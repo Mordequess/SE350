@@ -1,6 +1,6 @@
+#include "usr_proc.h"
 #include "rtx.h"
 #include "uart_polling.h"
-#include "usr_proc.h"
 #include "util.h"
 #include "k_ipc.h"
 
@@ -308,33 +308,70 @@ void proc4(void){
 	}
 }
 
-void proc5(void){
-	int testPassed = 1;
-	
-	msgbuf* message = request_memory_block();
-	message->mtype = DEFAULT;
-	message->mtext[0] = 'Q';
-	
-	add_to_order(5);
-	
-	//should pre-empt to 4.
-	send_message(4, message);
-	
-	
+/* ~~~~~~~ ORIGINAL DEFINITION OF PROC5 ~~~~~~~ */
+// void proc5(void){
+// 	int testPassed = 1;
+// 	
+// 	msgbuf* message = request_memory_block();
+// 	message->mtype = DEFAULT;
+// 	message->mtext[0] = 'Q';
+// 	
+// 	add_to_order(5);
+// 	
+// 	//should pre-empt to 4.
+// 	send_message(4, message);
 
+// 	while(1) {
+// 		release_processor();
+// 	}
+// }
+
+/* ~~~~~~~ KELLY TESTING DEF OF PROC6 ~~~~~~~~ */
+void proc5(void) {
+	void *p_msg;
+	msgbuf message;
+	// i want to receive a message from proc 6. once i do, i want to uart1putstring the message
+	// and then... idk set my own prio low orsomething
+	uart0_put_string("kellyPROC5: START\n\r");
+	
+	p_msg = receive_message(6); // get a special message from process 6!!
+	message = *((msgbuf *)p_msg); // ?/ doesthis makesense
+	uart0_put_string(message.mtext);
+	
 	while(1) {
+		uart0_put_string("5 is done\n\r");
 		release_processor();
 	}
+		
 }
 
-void proc6(void){
-	int testPassed = 1;
-	
+/* ~~~~~~~ ORIGINAL DEFINITION OF PROC6 ~~~~~~~ */
+// void proc6(void){
+// 	int testPassed = 1;
+// 	
+// 	while(1) {
+// 		release_processor();
+// 	}
+// }
 
+/* ~~~~~~~ KELLY TESTING DEF OF PROC6 ~~~~~~~~ */
+void proc6(void) {
+	void *my_blk;
+	msgbuf secret_message = { 0, 6, NULL, "you are beautiful in every single way\n\r                       "};
+	// i want to request a block, i want to put a msgbuf in it, i want to send it to proc5 (and then set proc5 to higher prio so it runs)
+	uart0_put_string("kellyPROC6: START\n\r");
 	
+	my_blk = request_memory_block();
+	//secret_message = { 0, 6, "you are beautiful in every single way\n\r                       " }; // maybe send_message should really take care of this.
+	//secret_message.msource = 6; // now that i'm writing this, it seems dumb. can you send ransom messages?
+	//secret_message.mtext = "you are beautiful in every single way\n\r                       "; //41 + 23 spaces????
+	my_blk = &secret_message; //uh... i get what i want to do...but...
+	send_message(5, my_blk);
 	
+	set_process_priority(6, LOW); // set me to low
 	
 	while(1) {
+		uart0_put_string("6 is done\n\r");
 		release_processor();
 	}
 }

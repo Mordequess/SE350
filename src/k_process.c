@@ -106,7 +106,7 @@ void process_init()
 	//It contains all test processes as well as wall, kcd, and crt
 	//note: does not change state, they all still count as NEW
 	for ( i = 0; i < NUM_PROCESSES; i++ ) {
-		if ((i >= PID_P1 && i <= PID_P6) || (i == PID_WALL_CLOCK) || (i == PID_CRT) || (i == PID_UART) ) {
+		if ((i >= PID_P1 && i <= PID_P6) || (i == PID_WALL_CLOCK) || (i == PID_KCD) || (i == PID_CRT)) {
 			enqueue(&g_ready_queue, gp_pcbs[i]);
 		}
 	}
@@ -198,7 +198,7 @@ int k_release_processor(void){
 		gp_current_process->m_state = READY;
 	}
 	
-	gp_current_process = scheduler(); // this now becomes pcbs[0]
+	gp_current_process = scheduler();
 	
 	//If scheduler returned NULL, we have an error.
 	//Keep currently running process the same.
