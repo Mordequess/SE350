@@ -120,7 +120,7 @@ void *k_request_memory_block(void) {
 	while (freeNode->length < BLOCK_SIZE) {
 		if (freeNode->next_Addr == NULL){ //if this is last free node, the request can't be filled
 			__enable_irq();
-			block_current_process(); //will release processor
+			block_current_process_on_memory(); //will release processor
 		}
 		else freeNode = (heap_blk*)(freeNode->next_Addr); //cast U32 as a heap_blk pointer to iterate through the linked list
 	}

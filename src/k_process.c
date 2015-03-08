@@ -194,7 +194,7 @@ int k_release_processor(void){
 	
 	pcb *p_pcb_old = gp_current_process; // initially this is NULL
 	
-	if (gp_current_process != NULL && gp_current_process->m_state != BLOCKED) {
+	if (gp_current_process != NULL && gp_current_process->m_state != BLOCKED_ON_MEMORY && gp_current_process->m_state != BLOCKED_ON_RECEIVE) {
 		gp_current_process->m_state = READY;
 	}
 	
@@ -245,8 +245,11 @@ int k_set_process_priority(int process_id, int priority) {
 	if (pcb_modified_process->m_state == READY || pcb_modified_process->m_state == NEW) {
 		remove_queue_node(&g_ready_queue, pcb_modified_process);
 		enqueue(&g_ready_queue, pcb_modified_process);
-	} else if (pcb_modified_process->m_state == BLOCKED) {
+	} else if (pcb_modified_process->m_state == BLOCKED_ON_MEMORY) {
 		remove_queue_node(&g_blocked_on_memory_queue, pcb_modified_process);
+		enqueue(&g_blocked_on_memory_queue, pcb_modified_process);
+	} else if (pcb_modified_process->m_state == BLOCKED_ON_RECEIVE) {
+		remove_queue_node(&g_blocked_on_receive_queue, pcb_modified_process);
 		enqueue(&g_blocked_on_memory_queue, pcb_modified_process);
 	} else if (pcb_modified_process->m_state == RUNNING) {
 		pcb_modified_process->m_state = READY;
@@ -308,8 +311,8 @@ pcb *get_pcb_pointer_from_process_id(int process_id) {
 }
 
 //called from memory
-void block_current_process(void) {
-	gp_current_process->m_state = BLOCKED;
+void block_current_process_on_memory(void) {
+	gp_current_process->m_state = BLOCKED_ON_MEMORY;
 	k_release_processor();
 }
 
@@ -322,6 +325,10 @@ int unblock_and_switch_to_blocked_process(void) {
 	gp_current_process->m_state = READY;
 	k_release_processor();
 	return RTX_OK;
+}
+
+int get_procid_of_current_process(){
+	return gp_current_process->m_pid;
 }
 
 

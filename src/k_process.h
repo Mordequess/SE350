@@ -40,8 +40,9 @@ void null_process(void);
 pcb *get_pcb_pointer_from_process_id(int);
 U32 is_a_more_important_process_ready(pcb* currentProcess);
 
-void block_current_process(void);
+void block_current_process_on_memory(void);
 int unblock_and_switch_to_blocked_process(void);
+int get_procid_of_current_process(void);
 
 pcb* get_ready_queue(void);
 pcb* get_blocked_on_memory_queue(void);

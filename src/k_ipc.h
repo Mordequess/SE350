@@ -2,6 +2,8 @@
 #define K_IPC_H
 
 #include "rtx.h"
+#include "k_rtx.h"
+#include "k_process.h"
 
 #define DEFAULT 0 /* A general purpose message.*/
 #define KCD_REG 1 /* A message to register a command with the Keyboard Command Decoder Process */
@@ -9,11 +11,15 @@
 #define CRT_DISP 3			/* A message intended for the CRT process */
 #define WALL_CLOCK_TICK 4 /* A message that updates the wall clock by one second */
 
-//their required message format
-typedef struct msgbuf {
-	int mtype; /* user defined message type. One of the two constants above. */
-	char mtext[1]; /* body of the message */
-} msgbuf;
+/* -------- QUEUES FOR MESSAGES -------- */
+
+void m_enqueue(int sender_id, message* element);
+message* m_dequeue(int destination_id, int sender_id);
+void m_remove_queue_node(int sender_id, message* element);
+U32 m_is_empty(int sender_id);
+U32 m_any_messages_from_sender(int destination_id, int sender_id);
+
+/* ----- Functions ----- */
 
 extern int k_send_message(int process_id, void* message_envelope);
 #define send_message(pid, env) _send_message((U32)k_send_message, pid, env)
