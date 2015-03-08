@@ -13,3 +13,17 @@ void assert(int expression, unsigned char * message) {
 	//if expression is true, do nothing. Just exit.
 	
 }
+
+void copy_string(char source[], char destination[]) {
+	int i = 0;
+    
+	while (1) {
+		destination[i] = source[i];
+        
+		if (source[i] == '\0') {
+			break;
+		}
+        
+		i++;
+  }
+}

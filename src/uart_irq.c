@@ -8,16 +8,18 @@
 #include <LPC17xx.h>
 #include "uart.h"
 #include "uart_polling.h"
+#include "k_iprocess.h"
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
 
-
+/*
 uint8_t g_buffer[]= "You Typed a Q\n\r";
 uint8_t *gp_buffer = g_buffer;
 uint8_t g_send_char = 0;
 uint8_t g_char_in;
 uint8_t g_char_out;
+*/
 
 /**
  * @brief: initialize the n_uart
@@ -150,20 +152,16 @@ int uart_irq_init(int n_uart) {
 	return 0;
 }
 
-
-/**
- * @brief: use CMSIS ISR for UART0 IRQ Handler
- * NOTE: This example shows how to save/restore all registers rather than just
- *       those backed up by the exception stack frame. We add extra
- *       push and pop instructions in the assembly routine. 
- *       The actual c_UART0_IRQHandler does the rest of irq handling
- */
+//CPSID and CPSIE disable and enable interrupts
+//iprocess will not be interrupted.
 __asm void UART0_IRQHandler(void)
 {
 	PRESERVE8
-	IMPORT c_UART0_IRQHandler
+	IMPORT uart_i_process
+	CPSID I
 	PUSH{r4-r11, lr}
-	BL c_UART0_IRQHandler
+	BL uart_i_process
+	CPSIE I
 	POP{r4-r11, pc}
 } 
 
@@ -171,6 +169,7 @@ __asm void UART0_IRQHandler(void)
 /**
  * @brief: c UART0 IRQ Handler
  */
+/*
 void c_UART0_IRQHandler(void)
 {
 	uint8_t IIR_IntId;	    // Interrupt ID from IIR 		 
@@ -180,10 +179,10 @@ void c_UART0_IRQHandler(void)
 	uart1_put_string("Entering c_UART0_IRQHandler\n\r");
 #endif // DEBUG_0
 
-	/* Reading IIR automatically acknowledges the interrupt */
+	// Reading IIR automatically acknowledges the interrupt
 	IIR_IntId = (pUart->IIR) >> 1 ; // skip pending bit in IIR 
 	if (IIR_IntId & IIR_RDA) { // Receive Data Avaialbe
-		/* read UART. Read RBR will clear the interrupt */
+		//read UART. Read RBR will clear the interrupt 
 		g_char_in = pUart->RBR;
 #ifdef DEBUG_0
 		uart1_put_string("Reading a char = ");
@@ -194,7 +193,7 @@ void c_UART0_IRQHandler(void)
 		g_buffer[12] = g_char_in; // nasty hack
 		g_send_char = 1;
 	} else if (IIR_IntId & IIR_THRE) {
-	/* THRE Interrupt, transmit holding register becomes empty */
+	// THRE Interrupt, transmit holding register becomes empty
 
 		if (*gp_buffer != '\0' ) {
 			g_char_out = *gp_buffer;
@@ -218,10 +217,11 @@ void c_UART0_IRQHandler(void)
 			gp_buffer = g_buffer;		
 		}
 	      
-	} else {  /* not implemented yet */
+	} else {  // not implemented yet
 #ifdef DEBUG_0
 			uart1_put_string("Should not get here!\n\r");
 #endif // DEBUG_0
 		return;
 	}	
 }
+*/

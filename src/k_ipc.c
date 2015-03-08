@@ -26,6 +26,7 @@ int k_send_message(int destination_id, void *message_envelope) {
 }
 
 void *k_receive_message(int *sender_id) {
+	__disable_irq();
 	/*
 	atomic ( on ) ;
 	while ( current_process msg_queue is empty ) {

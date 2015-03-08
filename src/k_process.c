@@ -10,10 +10,11 @@
 pcb **gp_pcbs;                  /* array of pcbs */
 pcb *gp_current_process = NULL; /* always point to the current RUN process */
 pcb* g_ready_queue;				/* Ready queue */
-pcb* g_blocked_queue;			/* Blocked queue */
+pcb* g_blocked_on_memory_queue;			/* Blocked queue */
+pcb* g_blocked_on_receive_queue;
 
 /* process initialization table */
-PROC_INIT g_proc_table[NUM_PROCESSES];
+static PROC_INIT g_proc_table[NUM_PROCESSES];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 
@@ -53,19 +54,19 @@ void process_init()
 	g_proc_table[PID_UART].mpf_start_pc = &uart_i_process;
 	g_proc_table[PID_UART].m_priority = HIGH;
 	
-	//KCD process
+	//KCD process (always HIGH)
 	g_proc_table[PID_KCD].m_pid = PID_KCD;
 	g_proc_table[PID_KCD].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_KCD].mpf_start_pc = &kcd_proc;
 	g_proc_table[PID_KCD].m_priority = HIGH;
 	
-	//CRT process
+	//CRT process (always HIGH)
 	g_proc_table[PID_CRT].m_pid = PID_CRT;
 	g_proc_table[PID_CRT].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_CRT].mpf_start_pc = &crt_proc;
 	g_proc_table[PID_CRT].m_priority = HIGH;
 	
-	//Wall clock process
+	//Wall clock process (always HIGH)
 	g_proc_table[PID_UART].m_pid = PID_UART;
 	g_proc_table[PID_UART].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_UART].mpf_start_pc = &wall_clock_proc;
@@ -101,10 +102,13 @@ void process_init()
 		(gp_pcbs[i])->mp_sp = sp;
 	}
 
-	//set up ready queue with all processes
+	//set up ready queue
+	//It contains all test processes as well as wall, kcd, and crt
 	//note: does not change state, they all still count as NEW
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
-		enqueue(&g_ready_queue, gp_pcbs[i]);
+	for ( i = 0; i < NUM_PROCESSES; i++ ) {
+		if ((i >= PID_P1 && i <= PID_P6) || (i == PID_WALL_CLOCK) || (i == PID_CRT) || (i == PID_UART) ) {
+			enqueue(&g_ready_queue, gp_pcbs[i]);
+		}
 	}
 	
 #ifdef DEBUG_0  
@@ -129,7 +133,7 @@ pcb *scheduler(void){
 		if (gp_current_process->m_state == READY) {
 			enqueue(&g_ready_queue, gp_current_process);
 		}
-		else enqueue(&g_blocked_queue, gp_current_process);
+		else enqueue(&g_blocked_on_memory_queue, gp_current_process);
 	}
 	
 	next = dequeue(&g_ready_queue); //if none are ready, defaults to null process
@@ -242,8 +246,8 @@ int k_set_process_priority(int process_id, int priority) {
 		remove_queue_node(&g_ready_queue, pcb_modified_process);
 		enqueue(&g_ready_queue, pcb_modified_process);
 	} else if (pcb_modified_process->m_state == BLOCKED) {
-		remove_queue_node(&g_blocked_queue, pcb_modified_process);
-		enqueue(&g_blocked_queue, pcb_modified_process);
+		remove_queue_node(&g_blocked_on_memory_queue, pcb_modified_process);
+		enqueue(&g_blocked_on_memory_queue, pcb_modified_process);
 	} else if (pcb_modified_process->m_state == RUNNING) {
 		pcb_modified_process->m_state = READY;
 	}
@@ -281,6 +285,18 @@ pcb *get_current_process() {
 	return gp_current_process;
 }
 
+pcb* get_ready_queue() {
+	return g_ready_queue;
+}
+
+pcb* get_blocked_on_memory_queue() {
+	return g_blocked_on_memory_queue;
+}
+
+pcb* get_blocked_on_receive_queue() {
+	return g_blocked_on_receive_queue;
+}
+
 pcb *get_pcb_pointer_from_process_id(int process_id) {
 	
 	//invalid process_id check
@@ -297,9 +313,9 @@ void block_current_process(void) {
 	k_release_processor();
 }
 
-//Tells processor to switch to the highest blocked process. It is no longer blocked.
+//Tells processor to switch to the highest blocked-on-memory process. It is no longer blocked.
 int unblock_and_switch_to_blocked_process(void) {
-	pcb* processToSwitchTo = dequeue(&g_blocked_queue);
+	pcb* processToSwitchTo = dequeue(&g_blocked_on_memory_queue);
 	processToSwitchTo->m_state = READY;
 	enqueue(&g_ready_queue, processToSwitchTo);
 	
