@@ -22,12 +22,13 @@
 #define USR_SZ_STACK 0x100         /* user proc stack size 256B  */
 #endif /* DEBUG_0 */
 
+#include "k_ipc.h"
 /*----- Types -----*/
 typedef unsigned char U8;
 typedef unsigned int U32;
 
 /* process states (no need for an EXIT state) */
-typedef enum {NEW = 0, READY, RUNNING, BLOCKED} PROC_STATE_E;  
+typedef enum {NEW = 0, READY, RUNNING, BLOCKED_ON_MEMORY, BLOCKED_ON_RECEIVE} PROC_STATE_E;  
 
 /*
   PCB data structure definition.
@@ -41,6 +42,7 @@ typedef struct pcb
 	PROC_STATE_E m_state;   /* state of the process */  
 	U32 *mp_sp;		/* stack pointer of the process */
 	struct pcb *mp_next;  /* next pcb, not used in this example */  
+	message* queue;
 } pcb;
 
 #endif // ! K_RTX_H_
