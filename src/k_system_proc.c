@@ -116,9 +116,9 @@ void wall_clock_proc(void) {
 	
 	while(1) {
 		
-		sender = -1;
+		sender_id = -1;
 		
-		message = receive_message(&sender);
+		message = receive_message(&sender_id);
 		
 		//emumerate through all clock commands
 		//act depending on the command given

@@ -309,22 +309,22 @@ void proc4(void){
 }
 
 /* ~~~~~~~ ORIGINAL DEFINITION OF PROC5 ~~~~~~~ */
-// void proc5(void){
-// 	int testPassed = 1;
-// 	
-// 	msgbuf* message = request_memory_block();
-// 	message->mtype = DEFAULT;
-// 	message->mtext[0] = 'Q';
-// 	
-// 	add_to_order(5);
-// 	
-// 	//should pre-empt to 4.
-// 	send_message(4, message);
+void proc5(void){
+	int testPassed = 1;
+	
+	msgbuf* message = request_memory_block();
+	message->mtype = DEFAULT;
+	message->mtext[0] = 'Q';
+	
+	add_to_order(5);
+	
+	//should pre-empt to 4.
+	send_message(4, message);
 
-// 	while(1) {
-// 		release_processor();
-// 	}
-// }
+	while(1) {
+		release_processor();
+	}
+}
 
 /* ~~~~~~~ KELLY TESTING DEF OF PROC6 ~~~~~~~~ */
 /*
@@ -349,13 +349,13 @@ void proc5(void) {
 */
 
 /* ~~~~~~~ ORIGINAL DEFINITION OF PROC6 ~~~~~~~ */
-// void proc6(void){
-// 	int testPassed = 1;
-// 	
-// 	while(1) {
-// 		release_processor();
-// 	}
-// }
+void proc6(void){
+	int testPassed = 1;
+	
+	while(1) {
+		release_processor();
+	}
+}
 
 /* ~~~~~~~ KELLY TESTING DEF OF PROC6 ~~~~~~~~ */
 /*

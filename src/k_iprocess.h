@@ -3,6 +3,8 @@
 
 #include "rtx.h"
 
+#define BUFFER_SIZE 32
+
 void timer_i_process(void);
 void uart_i_process(void);
 

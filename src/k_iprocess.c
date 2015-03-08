@@ -4,6 +4,8 @@
 #include "uart_polling.h"
 #include "uart.h"
 #include "hot_keys.h"
+#include "util.h"
+#include "k_ipc.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -16,8 +18,15 @@
 uint8_t g_buffer[]= "You Typed a Q\n\r";
 uint8_t *gp_buffer = g_buffer;
 uint8_t g_send_char = 0;
+
+
 uint8_t g_char_in;
 uint8_t g_char_out;
+
+uint8_t g_input_buffer[BUFFER_SIZE];
+uint8_t g_ouptut_buffer[BUFFER_SIZE];
+int g_input_buffer_index = 0;
+int g_output_buffer_index = 0;
 
 
 void timer_i_process(void) {
@@ -48,6 +57,9 @@ void uart_i_process(void) {
 	uint8_t IIR_IntId;	    /* Interrupt ID from IIR 		 */
 	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *)LPC_UART0;
 	
+	msgbuf* message_to_crt;
+	msgbuf* message_to_kcd;
+	
 #ifdef DEBUG_0
 	uart1_put_string("Entering c_UART0_IRQHandler\n\r");
 #endif
@@ -71,9 +83,29 @@ void uart_i_process(void) {
 	process_hot_key(g_char_in);
 #endif
 		
-		g_buffer[12] = g_char_in; // nasty hack
-		g_send_char = 1;
+		//Always send each new character to CRT process
+		message_to_crt = request_memory_block();
+		message_to_crt->mtype = CRT_DISP;
+		message_to_crt->mtext[0] = g_char_in;
+		message_to_crt->mtext[1] = '\0';
+		send_message(PID_CRT, message_to_crt);
 		
+		//If we are at a newline, the command is over. Pass to KCD.
+		//Otherwise, continue adding to the input buffer
+		if (g_char_in == '\r') {
+			g_input_buffer[g_input_buffer_index] = '\0';
+			
+			message_to_kcd = request_memory_block();
+			message_to_kcd->mtype = DEFAULT;
+			copy_string(g_input_buffer, message_to_kcd->mtext);
+			send_message(PID_KCD, message_to_kcd);
+			
+			g_input_buffer_index = 0;
+			
+		} else {
+			g_input_buffer[g_input_buffer_index] = g_char_in;
+			g_input_buffer_index++;
+		}
 		
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
@@ -94,7 +126,6 @@ void uart_i_process(void) {
 #ifdef DEBUG_0
 			uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
 #endif
-			
 			
 			pUart->IER ^= IER_THRE; // toggle the IER_THRE bit 
 			pUart->THR = '\0';
