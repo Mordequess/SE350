@@ -5,6 +5,8 @@
 
 #define DEFAULT 0 /* A general purpose message.*/
 #define KCD_REG 1 /* A message to register a command with the Keyboard Command Decoder Process */
+#define KCD_DISPATCH 2 /* A message to dispatch a registered KCD command to a process */
+#define CRT_DISP 3			/* A message intended for the CRT process */
 
 typedef struct msgbuf {
 	int mtype; /* user defined message type. One of the two constants above. */
