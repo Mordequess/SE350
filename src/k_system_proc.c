@@ -4,8 +4,9 @@
 #include "uart_polling.h"
 #include "uart.h"
 #include "util.h"
+#include "rtx.h"
 
-registered_command g_registered_commands[MAX_NUM_COMMANDS];
+registered_command g_registered_commands[MAX_COMMANDS];
 int g_number_commands_registered = 0;
 
 /* The process for the keyboard command decoder */
@@ -20,24 +21,23 @@ void kcd_proc(void) {
 		//will block the process at first
 		message = receive_message(NULL);
 	
-		if (message->mtype == DEFAULT) {
-			//handle a command
+		if (message->mtype == DEFAULT) { 			//handle a command
 			
       char keyboard_command_buffer[MAX_COMMAND_LENGTH];
             
 			//read the command from the message mdata
-      while (i < MAX_COMMAND_LENGTH && message->mdata[i] != '\0' && message->mdata[i] != ' ') {
-        keyboard_command_buffer[i] = message->mdata[i];
+      while (i < MAX_COMMAND_LENGTH && message->mtext[i] != '\0' && message->mtext[i] != ' ') {
+        keyboard_command_buffer[i] = message->mtext[i];
         i++;
       }
 			
 			//Loop through the commands to see if this one is registered anywhere
 			for (i = 0; i < g_number_commands_registered; i++) {
-				if () {
+				if (strings_are_equal(keyboard_command_buffer, g_registered_commands[i].command)) {
 					
 					message_to_dispatch = request_memory_block();
 					message_to_dispatch->mtype = KCD_DISPATCH;
-					copy_string(message->mdata, message_to_dispatch->mdata);
+					copy_string(message->mtext, message_to_dispatch->mtext);
 					
 					//TODO: send message. Need PID to send it to.
 					
@@ -83,7 +83,15 @@ void crt_proc(void) {
 
 void wall_clock_proc(void) {
 	
+	char RESET = 'R';
+	char TERMINATE = 'T';
+	char SET = 'S';
+	
 	msgbuf* message;
+	msgbuf* message_to_dispatch;
+	
+	int current_clock_time = 0;
+	int is_clock_running = 0;
 	
 	//register the WR, WS, and WT commands
 	message = request_memory_block();
@@ -110,6 +118,28 @@ void wall_clock_proc(void) {
 		
 		//emumerate through all clock commands
 		//act depending on the command given
+		
+		if (message->mtype == WALL_CLOCK_TICK) {
+			
+			//update by one second
+			current_clock_time++;
+			if (current_clock_time >= 24*60*60) {
+				current_clock_time = 0;
+			}
+			
+			//TODO: print the new time
+			
+			
+			//send an update message in 1000ms
+			message_to_dispatch = request_memory_block();
+			message_to_dispatch->mtype = WALL_CLOCK_TICK;
+			delayed_send(PID_WALL_CLOCK, message_to_dispatch, 1000);
+			
+		} else {
+			
+			//The message is one of the 3 commands (start, terminate, reset)
+			
+		}
 		
 		
 		

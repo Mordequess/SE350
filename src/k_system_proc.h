@@ -11,9 +11,7 @@ typedef struct registered_command {
 } registered_command;
 
 void kcd_proc(void);
-
 void crt_proc(void);
-
 void wall_clock_proc(void);
 
 #endif
