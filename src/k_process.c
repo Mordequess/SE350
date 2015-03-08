@@ -14,7 +14,7 @@ pcb* g_blocked_on_memory_queue;			/* Blocked queue */
 pcb* g_blocked_on_receive_queue;
 
 /* process initialization table */
-PROC_INIT g_proc_table[NUM_PROCESSES];
+static PROC_INIT g_proc_table[NUM_PROCESSES];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 
