@@ -206,11 +206,18 @@ void time_to_hms(int sss, char* target) {
 	t = sss % 60;
 	target[6] = (char)(((int)'0') + t/10);
 	target[7] = (char)(((int)'0') + t%10);
+	
+	//null terminator
+	target[8] = '\0';
 }
 
 //parameter is a time in the form (hh:mm:ss)
 int time_to_sss(char* hms) {
+	
 	int t = 0;
+	
+	assert(str_len(hms) >= 8, "Insufficient length of time string");
+
 	t += (int)((char)hms[0]) * 36000;
 	t += (int)((char)hms[1]) * 3600;
 

@@ -28,6 +28,8 @@ uint8_t g_ouptut_buffer[BUFFER_SIZE];
 int g_input_buffer_index = 0;
 int g_output_buffer_index = 0;
 
+msgbuf* g_msg_uart;
+
 
 void timer_i_process(void) {
 	
@@ -59,6 +61,8 @@ void uart_i_process(void) {
 	
 	msgbuf* message_to_crt;
 	msgbuf* message_to_kcd;
+	
+	int sender_id;
 	
 #ifdef DEBUG_0
 	uart1_put_string("Entering c_UART0_IRQHandler\n\r");
@@ -109,7 +113,33 @@ void uart_i_process(void) {
 		
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
-
+		
+		if (g_msg_uart == NULL) {
+			g_msg_uart = receive_message(&sender_id);
+		}
+		
+		if (g_msg_uart->mtext[g_output_buffer_index] != '\0' ) {
+			//character is non-null. Write to THR
+			
+#ifdef DEBUG_1
+	printf("UART i-process: writing %c\n\r", gp_cur_msg->m_data[g_output_buffer_index]);
+#endif
+            
+			pUart->THR = g_msg_uart->mtext[g_output_buffer_index];
+            
+			g_output_buffer_index++;
+            
+    } else { //buffer reaches the null terminator
+            
+      pUart->IER &= (~IER_THRE);
+      pUart->THR = '\0';
+            
+      release_memory_block(g_msg_uart);
+            
+			g_output_buffer_index = 0;
+		}
+		
+/*
 		if (*gp_buffer != '\0' ) {
 			g_char_out = *gp_buffer;
 			
@@ -132,6 +162,7 @@ void uart_i_process(void) {
 			g_send_char = 0;
 			gp_buffer = g_buffer;		
 		}
+		*/
 	      
 	} else {  /* not implemented yet */
 		
