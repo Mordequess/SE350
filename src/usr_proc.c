@@ -3,6 +3,7 @@
 #include "uart_polling.h"
 #include "util.h"
 #include "k_ipc.h"
+#include "k_iprocess.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
