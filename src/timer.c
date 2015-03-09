@@ -11,7 +11,7 @@
 
 #define BIT(X) (1<<X)
 
-volatile uint32_t g_timer_count = 0; // increment every 1 ms
+//volatile uint32_t g_timer_count = 0; // increment every 1 ms
 
 /**
  * @brief: initialize timer. Only timer 0 is supported
@@ -79,7 +79,7 @@ uint32_t timer_init(uint8_t n_timer)
 	*/
 	pTimer->MCR = BIT(0) | BIT(1);
 
-	g_timer_count = 0;
+	//g_timer_count = 0;
 
 	/* Step 4.4: CSMSIS enable timer0 IRQ */
 	NVIC_EnableIRQ(TIMER0_IRQn);
@@ -109,20 +109,23 @@ restore the context of the newly picked process ;
 __asm void TIMER0_IRQHandler(void)
 {
 	PRESERVE8
-	IMPORT c_TIMER0_IRQHandler
-	PUSH{r4-r11, lr}
-	BL c_TIMER0_IRQHandler
-	POP{r4-r11, pc}
+	IMPORT timer_i_process
+	CPSID I
+	PUSH {r4-r11, lr}
+	BL timer_i_process
+	CPSIE I
+	POP {r4-r11, pc}
 } 
 /**
  * @brief: c TIMER0 IRQ Handler
  */
+/*
 void c_TIMER0_IRQHandler(void)
 {
-	/* ack inttrupt, see section  21.6.1 on pg 493 of LPC17XX_UM */
+	// ack inttrupt, see section  21.6.1 on pg 493 of LPC17XX_UM
 	LPC_TIM0->IR = BIT(0);  
 	
 	g_timer_count++ ;
 	
-	
 }
+*/

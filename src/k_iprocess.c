@@ -19,7 +19,6 @@ uint8_t g_buffer[]= "You Typed a Q\n\r";
 uint8_t *gp_buffer = g_buffer;
 uint8_t g_send_char = 0;
 
-
 uint8_t g_char_in;
 uint8_t g_char_out;
 
@@ -30,10 +29,31 @@ int g_output_buffer_index = 0;
 
 msgbuf* g_msg_uart;
 
+volatile uint32_t g_timer_count = 0; // increment every 1 ms
 
 void timer_i_process(void) {
 	
+	message* current_message;
+		
+	/* ack inttrupt, see section  21.6.1 on pg 493 of LPC17XX_UM */
+	LPC_TIM0->IR = BIT(0); 
+	
 	__disable_irq();
+	
+	g_timer_count++;
+  
+	//delayed_send put the messages on the queue.
+	//iterate through the queue and send expired messages
+	current_message = m_peek(PID_TIMER);
+	while (current_message != NULL) {
+		if (current_message->expiry_time <= get_system_time()) {
+			send_message(current_message->destination_id, current_message->message_envelope);
+			m_remove_queue_node(PID_TIMER, current_message);
+			current_message = m_peek(PID_TIMER);
+		} else {
+			current_message = current_message->mp_next;
+		}
+	}
 	
 	/*
 	// get pending requests
@@ -52,7 +72,28 @@ void timer_i_process(void) {
 	__enable_irq();
 }
 
-
+/*
+The message (in the memory block pointed to by the second parameter) 
+will be sent to the destination process (process_id) after the expiration
+of the delay (timeout, given in millisecond units).
+*/
+int k_delayed_send(int process_id, void *message_envelope, int delay) {
+	
+	message *m;
+	
+	if (delay < 0) {
+		return RTX_ERR;
+	}
+	
+	if (process_id < PID_NULL || process_id >= NUM_PROCESSES) {
+		return RTX_ERR;
+	}
+	
+	m = message_new(get_procid_of_current_process(), process_id, (msgbuf *)message_envelope, delay);
+	m_enqueue(PID_TIMER, m);
+	
+	return RTX_OK;
+}
 
 void uart_i_process(void) {
 	
@@ -173,4 +214,11 @@ void uart_i_process(void) {
 		return;
 	}	
 	
+}
+
+/*
+Returns the system time in case functions outside this file need it
+*/
+int get_system_time() {
+	return g_timer_count;
 }

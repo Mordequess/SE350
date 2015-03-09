@@ -5,6 +5,7 @@
 #include "uart.h"
 #include "util.h"
 #include "rtx.h"
+#include "k_iprocess.h"
 
 registered_command g_registered_commands[MAX_COMMANDS];
 int g_number_commands_registered = 0;

@@ -1,15 +1,17 @@
 #include "k_ipc.h"
+#include "k_iprocess.h"
 
 /* ----- Global Variables ----- */
 //message* g_message_queue;				/* Message queue */
 
 //throws message "header" data in the same memory block as the msgbuf
-message* message_new(int sender, int destination, msgbuf* envelope) {
+message* message_new(int sender, int destination, msgbuf* envelope, int delay) {
 	
 	message* m = (message *)((U32)envelope + sizeof(msgbuf));
 	m->message_envelope = envelope;
 	m->sender_id = sender;
 	m->destination_id = destination;
+	m->expiry_time = get_system_time() + delay;
 	m->mp_next = NULL;
 	return m;
 }
@@ -21,7 +23,7 @@ int k_send_message(int destination_id, void* message_envelope) {
 	__disable_irq(); //atomic(on);
 	
 	//create message package
-	m = message_new(get_procid_of_current_process(), destination_id, (msgbuf *)message_envelope);
+	m = message_new(get_procid_of_current_process(), destination_id, (msgbuf *)message_envelope, 0);
 	receiving_proc = get_pcb_pointer_from_process_id(destination_id);
 	m_enqueue(destination_id, m);
 
@@ -49,19 +51,17 @@ void* k_receive_message(int *sender_id) {
 	return (void *)(m->message_envelope);
 }
 
-/*
-The message (in the memory block pointed to by the second parameter) 
-will be sent to the destination process (process_id) after the expiration
-of the delay (timeout, given in millisecond units).
-*/
-int k_delayed_send(int process_id, void *message_envelope, int delay) {
-	
-	if (delay < 0) {
-		return RTX_ERR;
-	}
-	return RTX_OK;
-}
+// ------------NONBLOCKING FUNCTION VERSIONS----------------------------------
 
+message *receive_message_non_blocking(int pid) {
+	message* msg;
+  if (!m_is_empty(pid)) {
+      msg = m_dequeue(pid);
+      return msg;
+  } else {
+      return NULL;
+  }
+}
 
 // ------------QUEUE FUNCTIONS ------------------------------------------------
 
@@ -133,6 +133,15 @@ U32 m_is_empty(int destination_id) {
 	} else {
 		return 0;
 	}
+}
+
+//Gives the first element of the queue without removing it
+//Will return NULL if the queue is empty.
+message* m_peek(int destination_id) {
+	message* element;
+	pcb* p = get_pcb_pointer_from_process_id(destination_id);
+	element = p->m_queue;
+	return element;
 }
 
 /*

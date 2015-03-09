@@ -7,11 +7,13 @@
 
 /* -------- QUEUES FOR MESSAGES -------- */
 
+message* message_new(int, int, msgbuf*, int);
 void m_enqueue(int sender_id, message* element);
 message* m_dequeue(int destination_id);
 void m_remove_queue_node(int sender_id, message* element);
 U32 m_is_empty(int sender_id);
 U32 m_any_messages_from_sender(int destination_id, int sender_id);
+message* m_peek(int destination_id);
 
 /* ----- Functions ----- */
 
@@ -23,8 +25,6 @@ extern void* k_receive_message(int* sender_id);
 #define receive_message(sender) _receive_message((U32)k_receive_message, sender)
 extern void* _receive_message(U32 p_func, int* sender) __SVC_0;
 
-extern int k_delayed_send(int process_id, void *message_envelope, int delay);
-#define delayed_send(process_id, message_envelope, delay) _delayed_send((U32)k_delayed_send, process_id, message_envelope, delay)
-extern int _delayed_send(U32 p_func, int process_id, void *message_envelope, int delay) __SVC_0;
+message *receive_message_non_blocking(int);
 
 #endif

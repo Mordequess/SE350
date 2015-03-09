@@ -48,6 +48,7 @@ typedef struct message {
 	msgbuf* message_envelope;
 	int sender_id;
 	int destination_id;
+	int expiry_time;
 	struct message* mp_next;
 } message;
 
