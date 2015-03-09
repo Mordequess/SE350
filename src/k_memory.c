@@ -96,7 +96,7 @@ void memory_init(void){
 
 #ifdef DEBUG_0  
 	printf("--MEMORY DEBUG STATUS--\n");
-	for (i = 0; i <= 6; i++){
+	for (i = 0; i < NUM_PROCESSES; i++){
 	printf("gp_pcbs[%x] = 0x%x \n", i, gp_pcbs[i]);
 	}
 	printf("stack total: 0x%x\n", ((U32)(NUM_PROCESSES*STACK_SIZE)));

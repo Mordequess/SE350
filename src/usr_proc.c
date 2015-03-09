@@ -16,7 +16,7 @@ int expected_proc_order[] =
 int actual_proc_order[RUN_LENGTH];
 int current_index = 0;
 
-const int TOTAL_TESTS = 10;
+const int TOTAL_TESTS = 14;
 int total_passed_tests = 0;
 int total_failed_tests = 0;
 
@@ -369,6 +369,11 @@ void proc5(void){
 	//submit test, should go on to p7 (or end)
 	submit_test("14", testPassed);
 	set_process_priority(5, LOWEST);
+	
+	//This is the end. Print out the scores.
+	printf("G028_test: %d/%d tests OK\n\r", total_passed_tests, TOTAL_TESTS);
+	printf("G028_test: %d/%d tests FAIL\n\r", total_failed_tests, TOTAL_TESTS);
+	printf("G028_test: END\n\r");
 
 	while(1) {
 		release_processor();
