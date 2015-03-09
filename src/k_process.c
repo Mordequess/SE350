@@ -92,6 +92,7 @@ void process_init()
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
 		(gp_pcbs[i])->m_state = NEW;
+		(gp_pcbs[i])->m_queue = NULL;
 		
 		sp = alloc_stack((g_proc_table[i]).m_stack_size);
 		*(--sp)  = INITIAL_xPSR;      // user process initial xPSR  
@@ -196,8 +197,8 @@ int k_release_processor(void){
 	
 	pcb *p_pcb_old = gp_current_process; // initially this is NULL
 	
-	if (gp_current_process != NULL && gp_current_process->m_state != BLOCKED_ON_MEMORY && gp_current_process->m_state != BLOCKED_ON_RECEIVE) {
-		gp_current_process->m_state = READY;
+	if (p_pcb_old != NULL && p_pcb_old->m_state != BLOCKED_ON_MEMORY && p_pcb_old->m_state != BLOCKED_ON_RECEIVE) {
+		p_pcb_old->m_state = READY;
 	}
 	
 	gp_current_process = scheduler();
@@ -253,10 +254,12 @@ int k_set_process_priority(int process_id, int priority) {
 	} else if (pcb_modified_process->m_state == BLOCKED_ON_RECEIVE) {
 		remove_queue_node(&g_blocked_on_receive_queue, pcb_modified_process);
 		enqueue(&g_blocked_on_memory_queue, pcb_modified_process);
-	} else if (pcb_modified_process->m_state == RUNNING) {
+	} /*else if (pcb_modified_process->m_state == RUNNING) {
 		//enqueue(&g_ready_queue, pcb_modified_process);
-		pcb_modified_process->m_state = READY;
-	}
+		//pcb_modified_process->m_state = READY;
+		
+		//no action required
+	}*/
 	
 	//Since priority was modified, we need to pre-empt
 	k_release_processor();

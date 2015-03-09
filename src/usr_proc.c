@@ -211,7 +211,7 @@ void proc2(void){
 void proc3(void) {
 	int i = 0;
 	int status = 0;
-	void* mem_ptr[100];
+	void* mem_ptr[97];
 	int testPassed = 1;
 	
 	add_to_order(3);

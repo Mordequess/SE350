@@ -3,16 +3,18 @@
 /* ----- Global Variables ----- */
 //message* g_message_queue;				/* Message queue */
 
+//throws message "header" data in the same memory block as the msgbuf
 message* message_new(int sender, int destination, msgbuf* envelope) {
-	message* m;
+	
+	message* m = (message *)((U32)envelope + sizeof(msgbuf));
+	m->message_envelope = envelope;
 	m->sender_id = sender;
 	m->destination_id = destination;
-	m->message_envelope = envelope;
 	m->mp_next = NULL;
 	return m;
 }
 
-int k_send_message(int destination_id, void *message_envelope) {
+int k_send_message(int destination_id, void* message_envelope) {
 	message* m;
 	pcb* receiving_proc;	
 
@@ -93,8 +95,9 @@ message* m_dequeue(int destination_id) {
 	element = p->m_queue;
 	
 	if (!m_is_empty(destination_id)) {
-		p->m_queue = p->m_queue->mp_next;
+		p->m_queue = (p->m_queue)->mp_next;
 		element->mp_next = NULL;
+		return element;
 	}
 	return NULL; //null if nothing to dequeue
 }

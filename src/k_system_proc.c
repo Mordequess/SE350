@@ -13,6 +13,7 @@ int g_number_commands_registered = 0;
 void kcd_proc(void) {
 	
 	int sender_id;
+	int test = 5;
 	msgbuf* message;
 	msgbuf* message_to_dispatch;
 	int i = 0;
@@ -92,7 +93,7 @@ void wall_clock_proc(void) {
 	const char RESET = 'R';
 	const char TERMINATE = 'T';
 	const char SET = 'S';
-	
+	int test = 5;
 	msgbuf* message;
 	msgbuf* delayed_message;
 	msgbuf* crt_message;
