@@ -91,32 +91,6 @@ uint32_t timer_init(uint8_t n_timer)
 }
 
 /**
- * @brief: use CMSIS ISR for TIMER0 IRQ Handler
- * NOTE: This example shows how to save/restore all registers rather than just
- *       those backed up by the exception stack frame. We add extra
- *       push and pop instructions in the assembly routine. 
- *       The actual c_TIMER0_IRQHandler does the rest of irq handling
- */
-
-/* From LEARN notes
-save the context of the current_process ;
-switch the current_process with timer_i_process ;
-load the timer_i_process context ;
-call the timer_i_process C function ;
-invoke the scheduler to pick next to run process ;
-restore the context of the newly picked process ;
-*/
-__asm void TIMER0_IRQHandler(void)
-{
-	PRESERVE8
-	IMPORT timer_i_process
-	CPSID I
-	PUSH {r4-r11, lr}
-	BL timer_i_process
-	CPSIE I
-	POP {r4-r11, pc}
-} 
-/**
  * @brief: c TIMER0 IRQ Handler
  */
 /*

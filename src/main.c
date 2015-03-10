@@ -11,8 +11,8 @@ int main() {
 	
 	SystemInit();
 	
-	uart0_init();
-	uart0_put_string("uart0_put_string test: Hello World!\n\r");
+	//uart0_init();
+	//uart0_put_string("uart0_put_string test: Hello World!\n\r");
 	
 	#ifdef DEBUG_0
 		init_printf(NULL, uart_put_char);

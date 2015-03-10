@@ -333,7 +333,6 @@ void proc4(void){
 	}
 }
 
-/* ~~~~~~~ ORIGINAL DEFINITION OF PROC5 ~~~~~~~ */
 void proc5(void){
 	void* mem_ptr;
 	int testPassed = 1;

@@ -152,19 +152,6 @@ int uart_irq_init(int n_uart) {
 	return 0;
 }
 
-//CPSID and CPSIE disable and enable interrupts
-//iprocess will not be interrupted.
-__asm void UART0_IRQHandler(void)
-{
-	PRESERVE8
-	IMPORT uart_i_process
-	CPSID I
-	PUSH{r4-r11, lr}
-	BL uart_i_process
-	CPSIE I
-	POP{r4-r11, pc}
-} 
-
 
 /**
  * @brief: c UART0 IRQ Handler

@@ -6,6 +6,8 @@
 #include "hot_keys.h"
 #include "util.h"
 #include "k_ipc.h"
+#include "k_process.h"
+#include "k_memory.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -31,6 +33,34 @@ msgbuf* g_msg_uart;
 
 volatile uint32_t g_timer_count = 0; // increment every 1 ms
 
+U32 g_timer_flag = 0;
+U32 g_uart_flag = 0;
+
+/* From LEARN notes
+save the context of the current_process ;
+switch the current_process with timer_i_process ;
+load the timer_i_process context ;
+call the timer_i_process C function ;
+invoke the scheduler to pick next to run process ;
+restore the context of the newly picked process ;
+*/
+__asm void TIMER0_IRQHandler(void)
+{
+  PRESERVE8
+  IMPORT timer_i_process
+  IMPORT k_release_processor
+  PUSH {R4-R11, lr}
+  BL timer_i_process
+  LDR R4, =__cpp(&g_timer_flag);
+  LDR R4, [R4]
+  MOV R5, #0
+  CMP R4, R5
+  BEQ TIMER_RESTORE
+  BL k_release_processor
+TIMER_RESTORE
+  POP {R4-R11, pc}
+}
+
 void timer_i_process(void) {
 	
 	message* current_message;
@@ -41,33 +71,28 @@ void timer_i_process(void) {
 	__disable_irq();
 	
 	g_timer_count++;
+	
+	g_timer_flag = 0;
   
 	//delayed_send put the messages on the queue.
 	//iterate through the queue and send expired messages
 	current_message = m_peek(PID_TIMER);
 	while (current_message != NULL) {
+		
 		if (current_message->expiry_time <= get_system_time()) {
 			send_message(current_message->destination_id, current_message->message_envelope);
 			m_remove_queue_node(PID_TIMER, current_message);
 			current_message = m_peek(PID_TIMER);
+			
+			//if priority of receiving process is greater, pre-empt
+			if (get_process_priority(current_message->destination_id) <= get_process_priority(get_procid_of_current_process())) {
+				g_timer_flag = 1;
+			}
+			
 		} else {
 			current_message = current_message->mp_next;
 		}
 	}
-	
-	/*
-	// get pending requests
-	while ( pending messages to i-process ) {
-		insert envelope into the timeout queue ;
-	}
-	while ( first message in queue timeout expired ) {
-		msg_t * env = dequeue ( timeout_queue ) ;
-		int target_pid = env->destination_pid ;
-		// forward msg to destination
-		send_message ( target_pid , env ) ;
-	}
-	*/
-	
 	
 	__enable_irq();
 }
@@ -95,6 +120,25 @@ int k_delayed_send(int process_id, void *message_envelope, int delay) {
 	return RTX_OK;
 }
 
+//CPSID and CPSIE disable and enable interrupts
+//iprocess will not be interrupted.
+__asm void UART0_IRQHandler(void)
+{
+  PRESERVE8
+  IMPORT uart_i_process
+  IMPORT k_release_processor
+  PUSH {R4-R11, lr}
+  BL uart_i_process
+  LDR R4, =__cpp(&g_uart_flag);
+  LDR R4, [R4]
+  MOV R5, #0
+  CMP R4, R5
+  BEQ UART_RESTORE
+  BL k_release_processor
+UART_RESTORE
+  POP {r4-r11, pc}
+}
+
 void uart_i_process(void) {
 	
 	uint8_t IIR_IntId;	    /* Interrupt ID from IIR 		 */
@@ -104,6 +148,8 @@ void uart_i_process(void) {
 	msgbuf* message_to_kcd;
 	
 	int sender_id;
+	
+	g_uart_flag = 0;
 	
 #ifdef DEBUG_0
 	uart1_put_string("Entering c_UART0_IRQHandler\n\r");
@@ -128,56 +174,73 @@ void uart_i_process(void) {
 	process_hot_key(g_char_in);
 #endif
 		
-		//Always send each new character to CRT process
-		message_to_crt = request_memory_block();
-		message_to_crt->mtype = CRT_DISP;
-		message_to_crt->mtext[0] = g_char_in;
-		message_to_crt->mtext[1] = '\0';
-		send_message(PID_CRT, message_to_crt);
+		if (hasFreeSpace()) {
+			//Always send each new character to CRT process
+			message_to_crt = request_memory_block();
+			message_to_crt->mtype = CRT_DISP;
+			message_to_crt->mtext[0] = g_char_in;
+			message_to_crt->mtext[1] = '\0';
+			send_message(PID_CRT, message_to_crt);
+		
+			//we will want to pre-empt to crt
+			g_uart_flag = 1;
+		}
+		
 		
 		//If we are at a newline, the command is over. Pass to KCD.
 		//Otherwise, continue adding to the input buffer
 		if (g_char_in == '\r') {
 			g_input_buffer[g_input_buffer_index] = '\0';
 			
-			message_to_kcd = request_memory_block();
-			message_to_kcd->mtype = DEFAULT;
-			copy_string(g_input_buffer, message_to_kcd->mtext);
-			send_message(PID_KCD, message_to_kcd);
+			if (hasFreeSpace()) {
+				message_to_kcd = request_memory_block();
+				message_to_kcd->mtype = DEFAULT;
+				copy_string(g_input_buffer, message_to_kcd->mtext);
+				send_message(PID_KCD, message_to_kcd);
 			
-			g_input_buffer_index = 0;
+				g_input_buffer_index = 0;
+			
+				//pre-empt to KCD proc
+				g_uart_flag = 1;
+				
+			}
 			
 		} else {
-			g_input_buffer[g_input_buffer_index] = g_char_in;
-			g_input_buffer_index++;
+			//do not put in input buffer if it's a hotkey
+			if (g_char_in != DEBUG_HOTKEY_1 && g_char_in != DEBUG_HOTKEY_2 && g_char_in != DEBUG_HOTKEY_3) {
+				g_input_buffer[g_input_buffer_index] = g_char_in;
+				g_input_buffer_index++;
+			}
 		}
 		
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
 		
-		if (g_msg_uart == NULL) {
-			g_msg_uart = receive_message(&sender_id);
-		}
+		g_msg_uart = (receive_message_non_blocking(PID_UART))->message_envelope;
 		
-		if (g_msg_uart->mtext[g_output_buffer_index] != '\0' ) {
-			//character is non-null. Write to THR
+		if (g_msg_uart != NULL) {
+		
+			if (g_msg_uart->mtext[g_output_buffer_index] != '\0' ) {
+				//character is non-null. Write to THR
 			
 #ifdef DEBUG_1
 	printf("UART i-process: writing %c\n\r", gp_cur_msg->m_data[g_output_buffer_index]);
 #endif
             
-			pUart->THR = g_msg_uart->mtext[g_output_buffer_index];
+				pUart->THR = g_msg_uart->mtext[g_output_buffer_index];
             
-			g_output_buffer_index++;
+				g_output_buffer_index++;
             
-    } else { //buffer reaches the null terminator
+			} else { //buffer reaches the null terminator
             
-      pUart->IER &= (~IER_THRE);
-      pUart->THR = '\0';
+				pUart->IER &= (~IER_THRE);
+				pUart->THR = '\0';
             
-      release_memory_block(g_msg_uart);
+				release_memory_block(g_msg_uart);
             
-			g_output_buffer_index = 0;
+				g_output_buffer_index = 0;
+			}
+		
 		}
 		
 /*
