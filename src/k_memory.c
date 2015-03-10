@@ -146,21 +146,25 @@ void *k_request_memory_block(void) {
 }
 	
 int k_release_memory_block(void* memory_block) {
+	heap_blk* h;
 	heap_blk* temp = (heap_blk*)HEAP_START_ADDR;
 
 	//check memory block pointer is valid
-	if ( (U32)memory_block < HEAP_START_ADDR + 4
-		|| (U32)memory_block > HEAP_END_ADDR - BLOCK_SIZE
-		// || TODO: 8bit alignment
-		){
+	if ( (U32)memory_block < HEAP_START_ADDR + sizeof(heap_blk*) || (U32)memory_block > HEAP_END_ADDR - BLOCK_SIZE){
 		return RTX_ERR;
 	}
 	
 	__disable_irq(); //atomic(on);
 
 	//special case: memory block is very top of heap
-	if ((U32)memory_block == HEAP_START_ADDR + 4){
+	if ((U32)memory_block == (U32)(HEAP_START_ADDR + 4)){
 		temp->length += BLOCK_SIZE;
+
+		//if a free space node immediately follows, delete that one and steal its "next", increase length
+		if (temp->next_Addr != NULL && (U32)(temp->next_Addr) == (U32)temp + temp->length + sizeof(heap_blk*)) {
+			temp->length += ((heap_blk*)(temp->next_Addr))->length;
+			temp->next_Addr = ((heap_blk*)(temp->next_Addr))->next_Addr;
+		}
 	}
 	else {
 		//find where address of mem block lies on free space list
@@ -168,20 +172,29 @@ int k_release_memory_block(void* memory_block) {
 			temp = (heap_blk*)temp->next_Addr; 
 		}
 		//if immediately after free space, increase above node
-		if ((U32)memory_block == (U32)temp + temp->length) {
+		if ((U32)memory_block == (U32)temp + temp->length || (U32)temp == HEAP_START_ADDR && (U32)memory_block == (U32)temp + temp->length + sizeof(heap_blk *)) {
 			temp->length += (U32)BLOCK_SIZE;
+		
+			//if a free space node immediately follows, delete that one and steal its "next", increase length
+			if (temp->next_Addr != NULL && (U32)(temp->next_Addr) == (U32)temp + temp->length + sizeof(heap_blk*)) {
+				temp->length += ((heap_blk*)(temp->next_Addr))->length;
+				temp->next_Addr = ((heap_blk*)(temp->next_Addr))->next_Addr;
+			}
 		}
 		//else create a node, set "next"
 		else {
-			((heap_blk*)memory_block)->length = (U32)BLOCK_SIZE;
-			((heap_blk*)memory_block)->next_Addr = temp->next_Addr;
-			temp->next_Addr = (U32)memory_block;
+			h = (heap_blk*)memory_block;
+			h->length = (U32)BLOCK_SIZE;
+			h->next_Addr = temp->next_Addr;
+			temp->next_Addr = (U32)h;
+
+			//if a free space node immediately follows, delete that one and steal its "next", increase length
+			if (h->next_Addr != NULL && (U32)(h->next_Addr) == (U32)h + h->length) {
+				h->length += ((heap_blk*)(h->next_Addr))->length;
+				temp = ((heap_blk*)(h->next_Addr));
+				h->next_Addr = temp->next_Addr;
+			}
 		}
-	}
-	//if a free space node immediately follows, delete that one and steal its "next", increase length
-	if (temp->next_Addr != NULL && temp->next_Addr == (U32)temp + temp->length) {
-		temp->length += ((heap_blk*)(temp->next_Addr))->length;
-		temp->next_Addr = ((heap_blk*)(temp->next_Addr))->next_Addr;
 	}
 
 	//If we have blocked processes, we can now unblock one.

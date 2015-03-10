@@ -7,10 +7,10 @@
 #endif /* DEBUG_0 */
 
 /* ----- Global Variables ----- */
-pcb **gp_pcbs;                  /* array of pcbs */
-pcb *gp_current_process = NULL; /* always point to the current RUN process */
-pcb* g_ready_queue;				/* Ready queue */
-pcb* g_blocked_on_memory_queue;			/* Blocked queue */
+pcb **gp_pcbs;                  	/* array of pcbs */
+pcb *gp_current_process = NULL; 	/* always point to the current RUN process */
+pcb* g_ready_queue;								/* Ready queue */
+pcb* g_blocked_on_memory_queue;		/* Blocked queue */
 pcb* g_blocked_on_receive_queue;
 
 /* process initialization table */
@@ -25,11 +25,7 @@ void null_process() {
 	}
 }
 
-/**
- * @brief: initialize all processes in the system
- */
-void process_init() 
-{
+void process_init() {
 	int i;
 	U32 *sp;
 	  
@@ -121,14 +117,7 @@ void process_init()
 #endif
 }
 
-/*@brief: scheduler, pick the pid of the next to run process
- *@return: PCB pointer of the next to run process
- *         NULL if error happens
- *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
- *      No other effect on other global variables.
- */
 pcb *scheduler(void){
-	pcb* next;
 	//If process is running, find something to swap it with
 	if (gp_current_process != NULL) {
 		if (gp_current_process->m_state == READY) {
@@ -140,19 +129,9 @@ pcb *scheduler(void){
 		else enqueue(&g_blocked_on_memory_queue, gp_current_process);
 	}
 	
-	next = dequeue(&g_ready_queue); //if none are ready, defaults to null process
-	return next;
+	return dequeue(&g_ready_queue); //if none are ready, defaults to null process
 }
 
-/*
- *@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
- *@param: p_pcb_old, the old pcb that was in RUN
- *@return: RTX_OK upon success
- *         RTX_ERR upon failure
- *PRE:  p_pcb_old and gp_current_process are pointing to valid PCBs.
- *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
- *      No other effect on other global variables.
- */
 int process_switch(pcb *p_pcb_old) {
 
 	PROC_STATE_E state;
@@ -168,10 +147,7 @@ int process_switch(pcb *p_pcb_old) {
 		__set_MSP((U32) gp_current_process->mp_sp);
 		__rte();  // pop exception stack frame from the stack for a new processes
 	}
-	
-	//The following will only execute if the if block above is FALSE 
-
-	if (gp_current_process != p_pcb_old) {
+	else if (gp_current_process != p_pcb_old) {
 		if (state == READY){ 		
 			//p_pcb_old->m_state = READY; 
 			p_pcb_old->mp_sp = (U32 *) __get_MSP(); // save the old process's sp
@@ -248,10 +224,12 @@ int k_set_process_priority(int process_id, int priority) {
 	if (pcb_modified_process->m_state == READY || pcb_modified_process->m_state == NEW) {
 		remove_queue_node(&g_ready_queue, pcb_modified_process);
 		enqueue(&g_ready_queue, pcb_modified_process);
-	} else if (pcb_modified_process->m_state == BLOCKED_ON_MEMORY) {
+	}
+	else if (pcb_modified_process->m_state == BLOCKED_ON_MEMORY) {
 		remove_queue_node(&g_blocked_on_memory_queue, pcb_modified_process);
 		enqueue(&g_blocked_on_memory_queue, pcb_modified_process);
-	} else if (pcb_modified_process->m_state == BLOCKED_ON_RECEIVE) {
+	} 
+	else if (pcb_modified_process->m_state == BLOCKED_ON_RECEIVE) {
 		remove_queue_node(&g_blocked_on_receive_queue, pcb_modified_process);
 		enqueue(&g_blocked_on_memory_queue, pcb_modified_process);
 	} /*else if (pcb_modified_process->m_state == RUNNING) {

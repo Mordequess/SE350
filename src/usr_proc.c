@@ -12,8 +12,9 @@
 const int RUN_LENGTH = 27;
 int expected_proc_order[] = 
 {
- 4, 4, 5, 4, 5, 4, 6, 4, 5, 4, 6, 5, 5,
  1, 2, 3, 3, 1, 1, 2, 2, 2, 3, 1, 3, 3, 2,
+	4, 4, 5, 4, 5, 4, 6, 4, 5, 4, 6, 5, 5
+ 
 };
 int actual_proc_order[RUN_LENGTH];
 int current_index = 0;
@@ -63,20 +64,20 @@ void set_test_procs() {
 	int i;
 	for( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_test_procs[i].m_pid=(U32)(i+1);
-		g_test_procs[i].m_stack_size=0x100;
+		g_test_procs[i].m_stack_size=0x260;
 	}
   
 	g_test_procs[0].mpf_start_pc = &proc1;
-	g_test_procs[0].m_priority   = LOWEST;
+	g_test_procs[0].m_priority   = MEDIUM;
 	
 	g_test_procs[1].mpf_start_pc = &proc2;
-	g_test_procs[1].m_priority   = LOWEST;
+	g_test_procs[1].m_priority   = MEDIUM;
 	
 	g_test_procs[2].mpf_start_pc = &proc3;
-	g_test_procs[2].m_priority   = LOWEST;
+	g_test_procs[2].m_priority   = LOW;
 	
 	g_test_procs[3].mpf_start_pc = &proc4;
-	g_test_procs[3].m_priority   = MEDIUM;
+	g_test_procs[3].m_priority   = LOW;
 	
 	g_test_procs[4].mpf_start_pc = &proc5;
 	g_test_procs[4].m_priority   = LOW;
@@ -93,7 +94,6 @@ void proc1(void) {
 	void* mem_ptr;
 	
 	uart0_put_string("G028_test: START\n\r");
-	
 	//get invalid pids
 	status[0] = get_process_priority(-1);
 	status[1] = get_process_priority(19);
@@ -213,7 +213,7 @@ void proc2(void){
 void proc3(void) {
 	int i = 0;
 	int status = 0;
-	void* mem_ptr[97];
+	void* mem_ptr[100];
 	int testPassed = 1;
 	
 	add_to_order(3);
@@ -255,10 +255,13 @@ void proc3(void) {
 	add_to_order(3);
 	testPassed = 1;
 	
-	for (i = 1; i < 100; i++) {
+	for (i = 1; i < 99; i++) {
 		status = release_memory_block(mem_ptr[i]);
 		if (status != RTX_OK) testPassed = 0;
 	}
+	
+	status = release_memory_block(mem_ptr[99]);
+	if (status != RTX_OK) testPassed = 0;
 	
 	//releasing should never have pre-empted.
 	add_to_order(3);
@@ -308,15 +311,17 @@ void proc4(void){
 
 	//5 will get blocked on recieve, jump to 6
 	add_to_order(4);
+	
+	//reserve a memory block for a message, then send in the gobbler
+	message = request_memory_block();
 	set_process_priority(6, HIGH);
 
 	//6 will get blocked on memory
 	add_to_order(4);
 
-	message = request_memory_block();
 	message->mtype = DEFAULT;
 	message->mtext[0] = 'R';
-	send_message(5, message); //should pre-empt on send
+	send_message(5, message); //should pre-empt on send?
 
 	//at this point 6 is being blocked, there is a memory block available to it
 	add_to_order(4);
@@ -340,7 +345,7 @@ void proc5(void){
 	message->mtext[0] = 'Q';
 	send_message(4, message); //should pre-empt to 4.
 
-	//back to 5. time to test blocked on memory & blocked on receive
+	//back at 5. time to test blocked on memory & blocked on receive
 	add_to_order(5);
 	mem_ptr = request_memory_block(); //request one memblock to block p6
 	message = receive_message(&sender_id); //get blocked on receive, go to p4
@@ -363,7 +368,7 @@ void proc5(void){
 	message->mtype = DEFAULT;
 	message->mtext[0] = 'S';
 	delayed_send(5, message, 1000);
-	//message = receive_message(&sender_id);    TODO: confirm this works
+	message = receive_message(&sender_id);
 
 	add_to_order(5);
 	if (sender_id != 5 || message->mtext[0] != 'S') {
@@ -387,20 +392,18 @@ void proc5(void){
 
 void proc6(void){
 	int i;
-	void* mem[99];
+	void* mem[100];
 	int testPassed = 1;
 
 	add_to_order(6);
-	//will get blocked on memory
-	for (i = 0; i < 98; ++i) {
+	//will get blocked on memory, go to 4
+	for (i = 0; i < 100; ++i) {
 		mem[i] = request_memory_block();
 	}
-
-	//get blocked on memory, go to 4
-	mem[98] = request_memory_block();
+	
 	add_to_order(6);
 
-	for (i = 0; i < 99; ++i) {
+	for (i = 0; i < 100; ++i) {
 		release_memory_block(mem[i]);
 	}
 

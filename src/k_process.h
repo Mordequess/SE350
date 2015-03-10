@@ -12,7 +12,7 @@
 /* ----- Definitions ----- */
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
-#define STACK_SIZE 0x200               /* stack size hardcoded as 0x100 in usr_proc */ //TODO: make it not
+#define STACK_SIZE 0x260               /* stack size hardcoded as 0x200 in usr_proc */ //TODO: make it not
 
 /* -------- QUEUES FOR PROCESSES -------- */
 
