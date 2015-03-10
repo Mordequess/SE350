@@ -80,7 +80,7 @@ void timer_i_process(void) {
 	while (current_message != NULL) {
 		
 		if (current_message->expiry_time <= get_system_time()) {
-			send_message(current_message->destination_id, current_message->message_envelope);
+			k_send_message(current_message->destination_id, current_message->message_envelope);
 			m_remove_queue_node(PID_TIMER, current_message);
 			current_message = m_peek(PID_TIMER);
 			
@@ -176,11 +176,11 @@ void uart_i_process(void) {
 		
 		if (hasFreeSpace()) {
 			//Always send each new character to CRT process
-			message_to_crt = request_memory_block();
+			message_to_crt = k_request_memory_block();
 			message_to_crt->mtype = CRT_DISP;
 			message_to_crt->mtext[0] = g_char_in;
 			message_to_crt->mtext[1] = '\0';
-			send_message(PID_CRT, message_to_crt);
+			k_send_message(PID_CRT, message_to_crt);
 		
 			//we will want to pre-empt to crt
 			g_uart_flag = 1;
@@ -193,10 +193,10 @@ void uart_i_process(void) {
 			g_input_buffer[g_input_buffer_index] = '\0';
 			
 			if (hasFreeSpace()) {
-				message_to_kcd = request_memory_block();
+				message_to_kcd = k_request_memory_block();
 				message_to_kcd->mtype = DEFAULT;
 				copy_string(g_input_buffer, message_to_kcd->mtext);
-				send_message(PID_KCD, message_to_kcd);
+				k_send_message(PID_KCD, message_to_kcd);
 			
 				g_input_buffer_index = 0;
 			
@@ -236,7 +236,7 @@ void uart_i_process(void) {
 				pUart->IER &= (~IER_THRE);
 				pUart->THR = '\0';
             
-				release_memory_block(g_msg_uart);
+				k_release_memory_block(g_msg_uart);
             
 				g_output_buffer_index = 0;
 			}
