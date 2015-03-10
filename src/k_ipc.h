@@ -16,6 +16,7 @@ U32 m_any_messages_from_sender(int destination_id, int sender_id);
 message* m_peek(int destination_id);
 
 /* ----- Functions ----- */
+int k_delayed_send_message(message* m);
 
 extern int k_send_message(int process_id, void* message_envelope);
 #define send_message(pid, env) _send_message((U32)k_send_message, pid, env)

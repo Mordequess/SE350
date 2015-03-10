@@ -84,7 +84,7 @@ void timer_i_process(void) {
 			temp = current_message;
 			m_remove_queue_node(PID_TIMER, current_message);
 			
-			k_send_message(temp->destination_id, temp->message_envelope);
+			k_delayed_send_message(temp);
 			
 			current_message = m_peek(PID_TIMER);
 			

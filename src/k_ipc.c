@@ -37,6 +37,24 @@ int k_send_message(int destination_id, void* message_envelope) {
 	return RTX_OK; //todo: is this what we want?
 }
 
+int k_delayed_send_message(message* m) {
+	pcb* receiving_proc;	
+	int destination_id = m->destination_id;
+	__disable_irq(); //atomic(on);
+	
+	receiving_proc = get_pcb_pointer_from_process_id(destination_id);
+	m_enqueue(destination_id, m);
+
+	//check if receiver is waiting
+	if (receiving_proc->m_state == BLOCKED_ON_RECEIVE) {
+		__enable_irq();
+		unblock_and_switch_to_blocked_on_receive_process(receiving_proc);
+	}
+
+	__enable_irq();
+	return RTX_OK; //todo: is this what we want?
+}
+
 void* k_receive_message(int *sender_id) {
 	message* m;
 	int current_process = get_procid_of_current_process();
