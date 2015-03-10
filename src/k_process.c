@@ -161,7 +161,7 @@ int process_switch(pcb *p_pcb_old) {
 
 	if (state == NEW) {
 		if (gp_current_process != p_pcb_old && p_pcb_old->m_state != NEW) {
-			p_pcb_old->m_state = READY;
+			//p_pcb_old->m_state = READY;
 			p_pcb_old->mp_sp = (U32 *) __get_MSP();
 		}
 		gp_current_process->m_state = RUNNING;
@@ -339,8 +339,8 @@ int unblock_and_switch_to_blocked_on_memory_process(void) {
 }
 
 //Tells processor to switch to the highest blocked-on-memory process. It is no longer blocked.
-int unblock_and_switch_to_blocked_on_receive_process(void) {
-	pcb* processToSwitchTo = dequeue(&g_blocked_on_receive_queue);
+int unblock_and_switch_to_blocked_on_receive_process(pcb* processToSwitchTo) {
+	remove_queue_node(&g_blocked_on_receive_queue, processToSwitchTo);
 	processToSwitchTo->m_state = READY;
 	enqueue(&g_ready_queue, processToSwitchTo);
 	

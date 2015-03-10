@@ -43,7 +43,7 @@ U32 is_a_more_important_process_ready(pcb* currentProcess);
 void block_current_process_on_memory(void);
 void block_current_process_on_receive(void);
 int unblock_and_switch_to_blocked_on_memory_process(void);
-int unblock_and_switch_to_blocked_on_receive_process(void);
+int unblock_and_switch_to_blocked_on_receive_process(pcb* );
 int get_procid_of_current_process(void);
 
 pcb* get_ready_queue(void);

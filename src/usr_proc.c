@@ -11,8 +11,9 @@
 
 const int RUN_LENGTH = 27;
 int expected_proc_order[] = 
-{1, 2, 3, 3, 1, 1, 2, 2, 2, 3, 1, 3, 3, 2,
- 4, 4, 5, 4, 5, 4, 6, 4, 5, 6, 4, 5, 5
+{
+ 4, 4, 5, 4, 5, 4, 6, 4, 5, 4, 6, 5, 5,
+ 1, 2, 3, 3, 1, 1, 2, 2, 2, 3, 1, 3, 3, 2,
 };
 int actual_proc_order[RUN_LENGTH];
 int current_index = 0;
@@ -66,16 +67,16 @@ void set_test_procs() {
 	}
   
 	g_test_procs[0].mpf_start_pc = &proc1;
-	g_test_procs[0].m_priority   = MEDIUM;
+	g_test_procs[0].m_priority   = LOWEST;
 	
 	g_test_procs[1].mpf_start_pc = &proc2;
-	g_test_procs[1].m_priority   = MEDIUM;
+	g_test_procs[1].m_priority   = LOWEST;
 	
 	g_test_procs[2].mpf_start_pc = &proc3;
-	g_test_procs[2].m_priority   = LOW;
+	g_test_procs[2].m_priority   = LOWEST;
 	
 	g_test_procs[3].mpf_start_pc = &proc4;
-	g_test_procs[3].m_priority   = LOW;
+	g_test_procs[3].m_priority   = MEDIUM;
 	
 	g_test_procs[4].mpf_start_pc = &proc5;
 	g_test_procs[4].m_priority   = LOW;
@@ -121,7 +122,7 @@ void proc1(void) {
 	
 	//should take us to proc 2
 	release_processor();
-	
+		
 	//Proc 1 is back.
 	add_to_order(1);
 	testPassed = 1;
@@ -160,7 +161,7 @@ void proc2(void){
 	
 	int expected_priorities[] = {NULL_PRIORITY, MEDIUM, MEDIUM, LOW, LOW, LOW, LOW};
 	int actual_priorities[7];
-	
+
 	add_to_order(2);
 
 	for (i = 0; i < 7; i++) {
@@ -292,33 +293,34 @@ void proc4(void){
 	//waiting for message from 5. Block and go to P5.
 	message = receive_message(&sender_id);
 
-	//No longer blocked.
+	//message received
 	add_to_order(4);
-	
 	testPassed = 1;
 	if (message->mtype != DEFAULT || (message->mtext[0] != 'Q')) {
 		testPassed = 0;
 	}
+	release_memory_block(message);
 	
 	submit_test("10", testPassed);
 
 	//jump to 5
 	set_process_priority(5, HIGH);
 
-	//5 will get blocked on recieve
+	//5 will get blocked on recieve, jump to 6
 	add_to_order(4);
 	set_process_priority(6, HIGH);
 
 	//6 will get blocked on memory
 	add_to_order(4);
+
+	message = request_memory_block();
+	message->mtype = DEFAULT;
 	message->mtext[0] = 'R';
+	send_message(5, message); //should pre-empt on send
 
-	//should pre-empt on send
-	send_message(5, message);
-
-	//6 is being blocked
+	//at this point 6 is being blocked, there is a memory block available to it
 	add_to_order(4);
-	submit_test("12", testPassed);
+	submit_test("11", testPassed);
 	set_process_priority(4, LOWEST);
 
 	while(1) {
@@ -333,40 +335,42 @@ void proc5(void){
 	int sender_id = NULL;
 	
 	msgbuf* message = request_memory_block();
+	add_to_order(5);
 	message->mtype = DEFAULT;
 	message->mtext[0] = 'Q';
-	
-	add_to_order(5);
-	
-	//should pre-empt to 4.
-	send_message(4, message);
+	send_message(4, message); //should pre-empt to 4.
 
 	//back to 5. time to test blocked on memory & blocked on receive
 	add_to_order(5);
-
-	//request one memblock to block p6
-	mem_ptr = request_memory_block();
-
-
-	message = receive_message(&sender_id);
+	mem_ptr = request_memory_block(); //request one memblock to block p6
+	message = receive_message(&sender_id); //get blocked on receive, go to p4
+	
+	//message received
+	add_to_order(5);
 	if (sender_id != 4 || message->mtext[0] != 'R') {
 		testPassed = 0;
 	}
-	else release_memory_block(mem_ptr);  //will jump back to p6, who is blocked on memory
-
+	else {
+		release_memory_block(mem_ptr);  //will jump back to p4. P6 will take this later
+	}
+	release_memory_block(message);
+	
 	add_to_order(5);
 	submit_test("13", testPassed);
 
-	//delayed send to selfy
+	//delayed send to self
+	message = request_memory_block();
+	message->mtype = DEFAULT;
 	message->mtext[0] = 'S';
 	delayed_send(5, message, 1000);
-	message = receive_message(&sender_id);
+	//message = receive_message(&sender_id);    TODO: confirm this works
 
 	add_to_order(5);
 	if (sender_id != 5 || message->mtext[0] != 'S') {
 		testPassed = 0;
 	}
-
+	release_memory_block(message);
+	
 	//submit test, should go on to p7 (or end)
 	submit_test("14", testPassed);
 	set_process_priority(5, LOWEST);
@@ -383,23 +387,24 @@ void proc5(void){
 
 void proc6(void){
 	int i;
-	void* mem[100];
+	void* mem[99];
 	int testPassed = 1;
 
 	add_to_order(6);
 	//will get blocked on memory
-	for (i = 0; i < 99; ++i) {
+	for (i = 0; i < 98; ++i) {
 		mem[i] = request_memory_block();
 	}
 
-	mem[99] = request_memory_block();
+	//get blocked on memory, go to 4
+	mem[98] = request_memory_block();
 	add_to_order(6);
 
-	for (i = 0; i < 100; ++i) {
+	for (i = 0; i < 99; ++i) {
 		release_memory_block(mem[i]);
 	}
 
-	submit_test("11", testPassed);
+	submit_test("12", testPassed);
 	set_process_priority(6, LOWEST);
 
 	while(1) {

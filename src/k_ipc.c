@@ -30,7 +30,7 @@ int k_send_message(int destination_id, void* message_envelope) {
 	//check if receiver is waiting
 	if (receiving_proc->m_state == BLOCKED_ON_RECEIVE) {
 		__enable_irq();
-		unblock_and_switch_to_blocked_on_receive_process();
+		unblock_and_switch_to_blocked_on_receive_process(receiving_proc);
 	}
 
 	__enable_irq();
