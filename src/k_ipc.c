@@ -112,6 +112,7 @@ void m_remove_queue_node(int destination_id, message* element) {
 	//compare to first item in queue
 	if (queue == element){
 		p->m_queue = p->m_queue->mp_next;
+		return;
 	}
 
 	//iterate through to find what to remove

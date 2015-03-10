@@ -64,6 +64,7 @@ TIMER_RESTORE
 void timer_i_process(void) {
 	
 	message* current_message;
+	message* temp;
 		
 	/* ack inttrupt, see section  21.6.1 on pg 493 of LPC17XX_UM */
 	LPC_TIM0->IR = BIT(0); 
@@ -80,12 +81,15 @@ void timer_i_process(void) {
 	while (current_message != NULL) {
 		
 		if (current_message->expiry_time <= get_system_time()) {
-			k_send_message(current_message->destination_id, current_message->message_envelope);
+			temp = current_message;
 			m_remove_queue_node(PID_TIMER, current_message);
+			
+			k_send_message(temp->destination_id, temp->message_envelope);
+			
 			current_message = m_peek(PID_TIMER);
 			
 			//if priority of receiving process is greater, pre-empt
-			if (get_process_priority(current_message->destination_id) <= get_process_priority(get_procid_of_current_process())) {
+			if (get_process_priority(temp->destination_id) <= get_process_priority(get_procid_of_current_process())) {
 				g_timer_flag = 1;
 			}
 			

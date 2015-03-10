@@ -75,13 +75,11 @@ void crt_proc(void) {
 		
 		//if message is of a CRT request type, send to uart iproc
 		if (message->mtype == CRT_DISP) {
-			send_message(PID_UART, message);
-			pUart->IER = IER_RBR | IER_THRE | IER_RLS;
-			pUart->THR = '\0';
+			send_message(PID_UART, message); //will be released at destination
+			pUart->IER |= IER_THRE;
+		} else {
+			release_memory_block(message);
 		}
-		
-		//release the memory from the original message
-		release_memory_block(message);
 		
 	}
 	
