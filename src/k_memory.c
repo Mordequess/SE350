@@ -62,6 +62,15 @@ U32 *alloc_stack(U32 size_b)
 	return sp;
 }
 
+//returns 0 if there are no heap blocks available
+U32 hasFreeSpace(void){
+	heap_blk* freeNode = (heap_blk*)HEAP_START_ADDR;
+	if (freeNode->length == 0 && freeNode->next_Addr == NULL) {
+		return 0;
+	}
+	return 1;
+}
+
 void memory_init(void){
 	
 	//p_end is going to point to the end of the heap once all is allocated
