@@ -89,9 +89,9 @@ void timer_i_process(void) {
 			current_message = m_peek(PID_TIMER);
 			
 			//if priority of receiving process is greater, pre-empt
-			if (k_get_process_priority(temp->destination_id) <= k_get_process_priority(get_procid_of_current_process())) {
+			//if (k_get_process_priority(temp->destination_id) <= k_get_process_priority(get_procid_of_current_process())) {
 				g_timer_flag = 1;
-			}
+			//}
 			
 		} else {
 			current_message = current_message->mp_next;
@@ -240,7 +240,7 @@ void uart_i_process(void) {
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
 		
-		g_msg_uart = (receive_message_non_blocking(PID_UART))->message_envelope;
+		g_msg_uart = receive_message_non_blocking(PID_UART);
 		
 		if (g_msg_uart != NULL) {
 			

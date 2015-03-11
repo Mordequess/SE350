@@ -40,7 +40,7 @@ typedef enum {NEW = 0, READY, RUNNING, BLOCKED_ON_MEMORY, BLOCKED_ON_RECEIVE} PR
 //their required message format
 typedef struct msgbuf {
 	int mtype; /* user defined message type. One of message constants above  */
-	char mtext[1]; /* body of the message */
+	char mtext[10]; /* body of the message */
 } msgbuf;
 
 //msgbuf wrapper containing the rest of the information we need for message passing

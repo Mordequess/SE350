@@ -17,6 +17,7 @@ message* m_peek(int destination_id);
 
 /* ----- Functions ----- */
 int k_delayed_send_message(message* m);
+void* receive_message_non_blocking(int);
 
 extern int k_send_message(int process_id, void* message_envelope);
 #define send_message(pid, env) _send_message((U32)k_send_message, pid, env)
@@ -26,6 +27,5 @@ extern void* k_receive_message(int* sender_id);
 #define receive_message(sender) _receive_message((U32)k_receive_message, sender)
 extern void* _receive_message(U32 p_func, int* sender) __SVC_0;
 
-message *receive_message_non_blocking(int);
 
 #endif

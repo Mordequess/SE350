@@ -47,8 +47,9 @@ int k_delayed_send_message(message* m) {
 
 	//check if receiver is waiting
 	if (receiving_proc->m_state == BLOCKED_ON_RECEIVE) {
-		__enable_irq();
-		unblock_and_switch_to_blocked_on_receive_process(receiving_proc);
+		remove_queue_node(&g_blocked_on_receive_queue, receiving_proc);
+		receiving_proc->m_state = READY;
+		enqueue(&g_ready_queue, receiving_proc);
 	}
 
 	__enable_irq();
@@ -71,11 +72,12 @@ void* k_receive_message(int *sender_id) {
 
 // ------------NONBLOCKING FUNCTION VERSIONS----------------------------------
 
-message *receive_message_non_blocking(int pid) {
-	message* msg;
+//ONLY used by uart_i_process
+void* receive_message_non_blocking(int pid) {
+	message* m;
   if (!m_is_empty(pid)) {
-      msg = m_dequeue(pid);
-      return msg;
+      m = m_dequeue(pid);
+      return (void *)(m->message_envelope);
   } else {
       return NULL;
   }

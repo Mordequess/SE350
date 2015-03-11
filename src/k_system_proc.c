@@ -87,6 +87,7 @@ void crt_proc(void) {
 void wall_clock_proc(void) {
 	
 	int sender_id = -1;
+	int tick = 1000;
 	
 	const char RESET = 'R';
 	const char TERMINATE = 'T';
@@ -137,11 +138,11 @@ void wall_clock_proc(void) {
 				time_to_hms(current_clock_time, crt_message->mtext);
 				send_message(PID_CRT, crt_message);
 				
-				//send an update message in 1000ms
+				//send an update message in 1000ms (1 tick)
 				delayed_message = request_memory_block();
 				delayed_message->mtype = WALL_CLOCK_TICK;
 				delayed_message->mtext[0] = '\0'; //wall clock does not care about mtext
-				delayed_send(PID_WALL_CLOCK, delayed_message, 1000);
+				delayed_send(PID_WALL_CLOCK, delayed_message, tick);
 				
 			}
 			
@@ -161,7 +162,7 @@ void wall_clock_proc(void) {
 						delayed_message = request_memory_block();
 						delayed_message->mtype = WALL_CLOCK_TICK;
 						delayed_message->mtext[0] = '\0';
-						delayed_send(PID_WALL_CLOCK, delayed_message, 1000);
+						delayed_send(PID_WALL_CLOCK, delayed_message, tick);
 					
 						release_memory_block(message);
 						break;
@@ -188,7 +189,7 @@ void wall_clock_proc(void) {
 						delayed_message = request_memory_block();
 						delayed_message->mtype = WALL_CLOCK_TICK;
 						delayed_message->mtext[0] = '\0';
-						delayed_send(PID_WALL_CLOCK, delayed_message, 1000);
+						delayed_send(PID_WALL_CLOCK, delayed_message, tick);
 					
 						//release the original message with the set command.
 						release_memory_block(message);
@@ -215,7 +216,7 @@ void time_to_hms(int sss, char* target) {
 	target[1] = (char)(((int)'0') + t%10);
 	target[2] = ':';
 
-	t = sss / 60;
+	t = (sss % 3600) / 60;
 	target[3] = (char)(((int)'0') + t/10);
 	target[4] = (char)(((int)'0') + t%10);
 	target[5] = ':';
@@ -237,16 +238,16 @@ int time_to_sss(char* hms) {
 	
 	int t = 0;
 	
-	assert(str_len(hms) >= 8, "Insufficient length of time string");
+	//assert(str_len(hms) >= 8, "Insufficient length of time string");
 
-	t += (int)((char)hms[0]) * 36000;
-	t += (int)((char)hms[1]) * 3600;
+	t += ((int)(hms[0]) -0x30) * 36000;
+	t += ((int)(hms[1]) -0x30) * 3600;
 
-	t += (int)((char)hms[3]) * 600;
-	t += (int)((char)hms[4]) * 60;
+	t += ((int)(hms[3]) -0x30) * 600;
+	t += ((int)(hms[4]) -0x30) * 60;
 
-	t += (int)((char)hms[6]) * 10;
-	t += (int)((char)hms[7]);
+	t += ((int)(hms[6]) -0x30) * 10;
+	t += ((int)(hms[7]) -0x30);
 
 	return t;
 }

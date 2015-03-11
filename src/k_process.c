@@ -310,7 +310,7 @@ int unblock_and_switch_to_blocked_on_memory_process(void) {
 	processToSwitchTo->m_state = READY;
 	enqueue(&g_ready_queue, processToSwitchTo);
 	
-	gp_current_process->m_state = READY;
+	//gp_current_process->m_state = READY;
 	k_release_processor();
 	return RTX_OK;
 }
@@ -321,7 +321,7 @@ int unblock_and_switch_to_blocked_on_receive_process(pcb* processToSwitchTo) {
 	processToSwitchTo->m_state = READY;
 	enqueue(&g_ready_queue, processToSwitchTo);
 	
-	gp_current_process->m_state = READY;
+	//gp_current_process->m_state = READY;
 	k_release_processor();
 	return RTX_OK;
 }
