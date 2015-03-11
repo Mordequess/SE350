@@ -89,7 +89,7 @@ void timer_i_process(void) {
 			current_message = m_peek(PID_TIMER);
 			
 			//if priority of receiving process is greater, pre-empt
-			if (get_process_priority(temp->destination_id) <= get_process_priority(get_procid_of_current_process())) {
+			if (k_get_process_priority(temp->destination_id) <= k_get_process_priority(get_procid_of_current_process())) {
 				g_timer_flag = 1;
 			}
 			

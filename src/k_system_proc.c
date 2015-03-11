@@ -14,7 +14,6 @@ int g_number_commands_registered = 0;
 void kcd_proc(void) {
 	
 	int sender_id;
-	int test = 5;
 	msgbuf* message;
 	msgbuf* message_to_dispatch;
 	int i = 0;
@@ -92,7 +91,7 @@ void wall_clock_proc(void) {
 	const char RESET = 'R';
 	const char TERMINATE = 'T';
 	const char SET = 'S';
-	int test = 5;
+	
 	msgbuf* message;
 	msgbuf* delayed_message;
 	msgbuf* crt_message;
@@ -124,26 +123,29 @@ void wall_clock_proc(void) {
 		
 		if (message->mtype == WALL_CLOCK_TICK) {
 			
-			//update by one second
-			current_clock_time++;
-			if (current_clock_time >= 24*60*60) {
-				current_clock_time = 0;
-			}
-			
 			if (is_clock_running) {
+				
+				//update by one second
+				current_clock_time++;
+				if (current_clock_time >= 24*60*60) {
+					current_clock_time = 0;
+				}
+			
 				//Send the new time string hh:mm:ss to CRT
 				crt_message = request_memory_block();
 				crt_message->mtype = CRT_DISP;
 				time_to_hms(current_clock_time, crt_message->mtext);
 				send_message(PID_CRT, crt_message);
+				
+				//send an update message in 1000ms
+				delayed_message = request_memory_block();
+				delayed_message->mtype = WALL_CLOCK_TICK;
+				delayed_message->mtext[0] = '\0'; //wall clock does not care about mtext
+				delayed_send(PID_WALL_CLOCK, delayed_message, 1000);
+				
 			}
 			
 			release_memory_block(message);
-			
-			//send an update message in 1000ms
-			delayed_message = request_memory_block();
-			delayed_message->mtype = WALL_CLOCK_TICK;
-			delayed_send(PID_WALL_CLOCK, delayed_message, 1000);
 			
 		} else {
 			
@@ -154,24 +156,39 @@ void wall_clock_proc(void) {
 					case RESET:
 						is_clock_running = 1;
 						current_clock_time = 0;
+					
+						//send an update message in 1000ms
+						delayed_message = request_memory_block();
+						delayed_message->mtype = WALL_CLOCK_TICK;
+						delayed_message->mtext[0] = '\0';
+						delayed_send(PID_WALL_CLOCK, delayed_message, 1000);
+					
 						release_memory_block(message);
 						break;
+					
 					case TERMINATE:
 						is_clock_running = 0;
 						current_clock_time = 0;
 						release_memory_block(message);
 						break;
+					
 					case SET:
-						
 						is_clock_running = 1;
 						
 						//for %WS hh:mm:ss, skip straight to the date part.
 						current_clock_time = time_to_sss(&(message->mtext[4]));
 					
+						//send display message to crt process
 						crt_message = request_memory_block();
 						crt_message->mtype = CRT_DISP;
 						time_to_hms(current_clock_time, crt_message->mtext);
 						send_message(PID_CRT, crt_message);
+					
+						//send an update message in 1000ms
+						delayed_message = request_memory_block();
+						delayed_message->mtype = WALL_CLOCK_TICK;
+						delayed_message->mtext[0] = '\0';
+						delayed_send(PID_WALL_CLOCK, delayed_message, 1000);
 					
 						//release the original message with the set command.
 						release_memory_block(message);

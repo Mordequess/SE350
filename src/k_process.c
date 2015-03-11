@@ -135,7 +135,6 @@ pcb *scheduler(void){
 int process_switch(pcb *p_pcb_old) {
 
 	PROC_STATE_E state;
-	pcb* test_test = gp_current_process;
 	state = gp_current_process->m_state;
 
 	if (state == NEW) {
