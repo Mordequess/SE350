@@ -2,7 +2,7 @@
 #include "rtx.h"
 #include "k_rtx.h"
 #include "uart_polling.h"
-#include "printf.h"
+//#include "printf.h"
 #include "k_process.h"
 
 /*
@@ -13,19 +13,19 @@ void process_hot_key(char c) {
 	
 	switch(c) {
 		case DEBUG_HOTKEY_1:
-			printf("========== READY QUEUE ==========\n\r");
+			uart0_put_string("========== READY QUEUE ==========\n\r");
 			print_queue(get_ready_queue());
-			printf("====== END OF READY QUEUE =======\n\r");
+			uart0_put_string("====== END OF READY QUEUE =======\n\r");
 			break;
 		case DEBUG_HOTKEY_2:
-			printf("========== BLOCKED ON MEMORY QUEUE ==========\n\r");
+			uart0_put_string("========== BLOCKED ON MEMORY QUEUE ==========\n\r");
 			print_queue(get_blocked_on_memory_queue());
-			printf("====== END OF BLOCKED ON MEMORY QUEUE =======\n\r");
+			uart0_put_string("====== END OF BLOCKED ON MEMORY QUEUE =======\n\r");
 			break;
 		case DEBUG_HOTKEY_3:
-			printf("========== BLOCKED ON RECEIVE QUEUE ==========\n\r");
+			uart0_put_string("========== BLOCKED ON RECEIVE QUEUE ==========\n\r");
 			print_queue(get_blocked_on_receive_queue());
-			printf("====== END OF BLOCKED ON RECEIVE QUEUE =======\n\r");
+			uart0_put_string("====== END OF BLOCKED ON RECEIVE QUEUE =======\n\r");
 			break;
 	}
 }
@@ -49,5 +49,9 @@ void print_queue(pcb* head) {
 Prints the PID and priority of a process.
 */
 void print_process(pcb *proc) {
-	printf("Process Id = %d, Priority = %d\n\r", proc->m_pid, proc->m_priority);
+	uart0_put_string("Process Id = ");
+	uart0_put_char('0'+ proc->m_pid);
+	uart0_put_string(" Priority = ");
+	uart0_put_char('0' + proc->m_priority);
+	uart0_put_string("\n\r");
 }

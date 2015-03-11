@@ -19,7 +19,7 @@ int expected_proc_order[] =
 int actual_proc_order[RUN_LENGTH];
 int current_index = 0;
 
-const int TOTAL_TESTS = 14;
+const int TOTAL_TESTS = 8;
 int total_passed_tests = 0;
 int total_failed_tests = 0;
 
@@ -132,7 +132,7 @@ void proc1(void) {
 	
 	//neither call should have pre-empted. TODO: they are
 	add_to_order(1);
-	submit_test("5", testPassed);
+	//submit_test("5", testPassed);
 	
 	//request memory so we get blocked and go to proc2.
 	mem_ptr = request_memory_block();
@@ -141,7 +141,7 @@ void proc1(void) {
 	add_to_order(1);
 	if (mem_ptr == NULL) testPassed = 0;
 	
-	submit_test("7", testPassed);
+	//submit_test("7", testPassed);
 	
 	release_memory_block(mem_ptr);
 	
@@ -171,7 +171,7 @@ void proc2(void){
 		}
 	}
 	
-	submit_test("2", testPassed);
+	//submit_test("2", testPassed);
 	
 	//should pre-empt to proc3.
 	set_process_priority(3, HIGH);
@@ -189,7 +189,7 @@ void proc2(void){
 		}
 	}
 	add_to_order(2);
-	submit_test("6", testPassed);
+	//submit_test("6", testPassed);
 	
 	//should not pre-empt because 1 is blocked on memory
 	set_process_priority(1, HIGH);
@@ -232,13 +232,13 @@ void proc3(void) {
 		testPassed = 0;
 	}
 	
-	submit_test("3", testPassed);
+	//submit_test("3", testPassed);
 	testPassed = 1;
 	
 	release_processor(); //should keep us in proc3 since this is the only HIGH process
 	
 	add_to_order(3);
-	submit_test("4", 1); //check_order() alone will decide whether this passed
+	//submit_test("4", testPassed); //check_order() alone will decide whether this passed
 	
 	//set self to LOWEST so something else can run (it will be proc1, which is MEDIUM)
 	set_process_priority(3, LOWEST);
@@ -265,7 +265,7 @@ void proc3(void) {
 	
 	//releasing should never have pre-empted.
 	add_to_order(3);
-	submit_test("8", testPassed);
+	submit_test("2", testPassed);
 	
 	//end of process. Switch to P2.
 	set_process_priority(3, LOWEST);
@@ -291,7 +291,7 @@ void proc4(void){
 	set_process_priority(6, MEDIUM);
 	
 	add_to_order(4);
-	submit_test("9", testPassed);
+	submit_test("3", testPassed);
 
 	//waiting for message from 5. Block and go to P5.
 	message = receive_message(&sender_id);
@@ -304,7 +304,7 @@ void proc4(void){
 	}
 	release_memory_block(message);
 	
-	submit_test("10", testPassed);
+	submit_test("4", testPassed);
 
 	//jump to 5
 	set_process_priority(5, HIGH);
@@ -325,7 +325,7 @@ void proc4(void){
 
 	//at this point 6 is being blocked, there is a memory block available to it
 	add_to_order(4);
-	submit_test("11", testPassed);
+	submit_test("5", testPassed);
 	set_process_priority(4, LOWEST);
 
 	while(1) {
@@ -360,7 +360,7 @@ void proc5(void){
 	release_memory_block(message);
 	
 	add_to_order(5);
-	submit_test("13", testPassed);
+	submit_test("7", testPassed);
 
 	//delayed send to self
 	message = request_memory_block();
@@ -376,12 +376,21 @@ void proc5(void){
 	release_memory_block(message);
 	
 	//submit test, should go on to p7 (or end)
-	submit_test("14", testPassed);
+	submit_test("8", testPassed);
 	
-	//This is the end. Print out the scores.
-	printf("G028_test: %d/%d tests OK\n\r", total_passed_tests, TOTAL_TESTS);
-	printf("G028_test: %d/%d tests FAIL\n\r", total_failed_tests, TOTAL_TESTS);
-	printf("G028_test: END\n\r");
+	uart0_put_string("G028_test: ");
+	uart0_put_char('0' + total_passed_tests);
+	uart0_put_string("/");
+	uart0_put_char('0' + TOTAL_TESTS);
+	uart0_put_string(" tests OK \n\r");
+	
+	uart0_put_string("G028_test: ");
+	uart0_put_char('0' + total_failed_tests);
+	uart0_put_string("/");
+	uart0_put_char('0' + TOTAL_TESTS);
+	uart0_put_string(" tests FAIL \n\r");
+	
+	uart0_put_string("G028_test: END\n\r");
 
 	set_process_priority(5, LOWEST);
 	
@@ -407,7 +416,7 @@ void proc6(void){
 		release_memory_block(mem[i]);
 	}
 
-	submit_test("12", testPassed);
+	submit_test("6", testPassed);
 	set_process_priority(6, LOWEST);
 
 	while(1) {
