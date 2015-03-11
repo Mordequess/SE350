@@ -224,8 +224,12 @@ void time_to_hms(int sss, char* target) {
 	target[6] = (char)(((int)'0') + t/10);
 	target[7] = (char)(((int)'0') + t%10);
 	
+	//newline
+	target[8] = '\r';
+	target[9] = '\n';
+	
 	//null terminator
-	target[8] = '\0';
+	target[10] = '\0';
 }
 
 //parameter is a time in the form (hh:mm:ss)

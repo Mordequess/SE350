@@ -184,8 +184,18 @@ void uart_i_process(void) {
 			message_to_crt = k_request_memory_block();
 			message_to_crt->mtype = CRT_DISP;
 			
-			message_to_crt->mtext[0] = g_char_in;
-			message_to_crt->mtext[1] = '\0';
+			if (g_char_in != '\r') {
+				message_to_crt->mtext[0] = g_char_in;
+				message_to_crt->mtext[1] = '\0';
+			} else {
+				message_to_crt->mtext[0] = '\n';
+				message_to_crt->mtext[1] = g_char_in;
+				message_to_crt->mtext[2] = '\0';
+      }
+			
+			//message_to_crt->mtext[0] = g_char_in;
+			//message_to_crt->mtext[1] = '\0';	
+			
 			k_send_message(PID_CRT, message_to_crt);
 		
 			//we will want to pre-empt to crt
