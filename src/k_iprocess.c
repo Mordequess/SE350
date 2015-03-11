@@ -151,7 +151,7 @@ void uart_i_process(void) {
 	msgbuf* message_to_crt;
 	msgbuf* message_to_kcd;
 	
-	int sender_id;
+	int mtextIndex = 0;
 	
 	g_uart_flag = 0;
 	
@@ -179,9 +179,11 @@ void uart_i_process(void) {
 #endif
 		
 		if (hasFreeSpace()) {
+			
 			//Always send each new character to CRT process
 			message_to_crt = k_request_memory_block();
 			message_to_crt->mtype = CRT_DISP;
+			
 			message_to_crt->mtext[0] = g_char_in;
 			message_to_crt->mtext[1] = '\0';
 			k_send_message(PID_CRT, message_to_crt);
@@ -195,6 +197,7 @@ void uart_i_process(void) {
 		//Otherwise, continue adding to the input buffer
 		if (g_char_in == '\r') {
 			g_input_buffer[g_input_buffer_index] = '\0';
+			g_input_buffer_index++;
 			
 			if (hasFreeSpace()) {
 				message_to_kcd = k_request_memory_block();
@@ -210,11 +213,18 @@ void uart_i_process(void) {
 			}
 			
 		} else {
-			//do not put in input buffer if it's a hotkey
+			
+//do not put in input buffer if it's a hotkey and hotkeys are defined
+#ifdef _DEBUG_HOTKEYS
 			if (g_char_in != DEBUG_HOTKEY_1 && g_char_in != DEBUG_HOTKEY_2 && g_char_in != DEBUG_HOTKEY_3) {
 				g_input_buffer[g_input_buffer_index] = g_char_in;
 				g_input_buffer_index++;
 			}
+#else
+			g_input_buffer[g_input_buffer_index] = g_char_in;
+			g_input_buffer_index++;
+#endif
+			
 		}
 		
 	} else if (IIR_IntId & IIR_THRE) {
@@ -223,19 +233,44 @@ void uart_i_process(void) {
 		g_msg_uart = (receive_message_non_blocking(PID_UART))->message_envelope;
 		
 		if (g_msg_uart != NULL) {
-		
+			
+			mtextIndex = 0;
+			
+			while (g_msg_uart->mtext[mtextIndex] != '\0') {
+
+#ifdef DEBUG_0
+	uart1_put_string("Writing a char = ");
+	uart1_put_char(g_msg_uart->mtext[mtextIndex]);
+	uart1_put_string("\n\r");
+#endif
+				
+				pUart->THR = g_msg_uart->mtext[mtextIndex];
+				
+				mtextIndex++;
+			}
+			
+			//end of string. Reached the null terminator
+			pUart->IER &= (~IER_THRE);
+			pUart->THR = '\0';
+            
+			k_release_memory_block(g_msg_uart);
+			
+			
+		/*
 			if (g_msg_uart->mtext[g_output_buffer_index] != '\0' ) {
 				//character is non-null. Write to THR
 			
-#ifdef DEBUG_1
-	printf("UART i-process: writing %c\n\r", gp_cur_msg->m_data[g_output_buffer_index]);
+#ifdef DEBUG_0
+	uart1_put_string("Writing a char = ");
+	uart1_put_char(g_msg_uart->mtext[g_output_buffer_index]);
+	uart1_put_string("\n\r");
 #endif
             
 				pUart->THR = g_msg_uart->mtext[g_output_buffer_index];
             
 				g_output_buffer_index++;
             
-			} else { //buffer reaches the null terminator
+			} else { //buffer reaches the null terminator.
             
 				pUart->IER &= (~IER_THRE);
 				pUart->THR = '\0';
@@ -244,7 +279,7 @@ void uart_i_process(void) {
             
 				g_output_buffer_index = 0;
 			}
-		
+		*/
 		}
 		
 /*
