@@ -334,3 +334,22 @@ Returns the system time in case functions outside this file need it
 int get_system_time() {
 	return g_timer_count;
 }
+
+void removeMessagesFromTimerProcess(int pid) {
+	
+	message* current_message = m_peek(PID_TIMER);
+	while (current_message != NULL) {
+		
+		if (current_message->sender_id == pid) {
+			m_remove_queue_node(PID_TIMER, current_message);
+			
+			release_memory_block(current_message->message_envelope);
+			
+			current_message = m_peek(PID_TIMER);
+			
+		} else {
+			current_message = current_message->mp_next;
+		}
+	}
+	
+}

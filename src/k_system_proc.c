@@ -158,6 +158,8 @@ void wall_clock_proc(void) {
 						is_clock_running = 1;
 						current_clock_time = 0;
 					
+						removeMessagesFromTimerProcess(PID_WALL_CLOCK);
+					
 						//send an update message in 1000ms
 						delayed_message = request_memory_block();
 						delayed_message->mtype = WALL_CLOCK_TICK;
@@ -170,11 +172,14 @@ void wall_clock_proc(void) {
 					case TERMINATE:
 						is_clock_running = 0;
 						current_clock_time = 0;
+						removeMessagesFromTimerProcess(PID_WALL_CLOCK);
 						release_memory_block(message);
 						break;
 					
 					case SET:
 						is_clock_running = 1;
+					
+						removeMessagesFromTimerProcess(PID_WALL_CLOCK);
 						
 						//for %WS hh:mm:ss, skip straight to the date part.
 						current_clock_time = time_to_sss(&(message->mtext[4]));
