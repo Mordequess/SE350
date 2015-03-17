@@ -1,6 +1,7 @@
 #include "k_process.h"
 #include "k_iprocess.h"
 #include "k_system_proc.h"
+#include "stress_proc.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -67,6 +68,30 @@ void process_init() {
 	g_proc_table[PID_WALL_CLOCK].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_WALL_CLOCK].mpf_start_pc = &wall_clock_proc;
 	g_proc_table[PID_WALL_CLOCK].m_priority = HIGH;
+	
+	//Set priority process
+	g_proc_table[PID_SET_PRIORITY].m_pid = PID_SET_PRIORITY;
+	g_proc_table[PID_SET_PRIORITY].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_SET_PRIORITY].mpf_start_pc = &set_priority_proc;
+	g_proc_table[PID_SET_PRIORITY].m_priority = HIGH;
+	
+	//Stress process A
+	g_proc_table[PID_A].m_pid = PID_A;
+	g_proc_table[PID_A].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_A].mpf_start_pc = &stress_proc_a;
+	g_proc_table[PID_A].m_priority = HIGH;
+	
+	//Stress process B
+	g_proc_table[PID_B].m_pid = PID_B;
+	g_proc_table[PID_B].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_B].mpf_start_pc = &stress_proc_b;
+	g_proc_table[PID_B].m_priority = HIGH;
+	
+	//Stress process C
+	g_proc_table[PID_C].m_pid = PID_C;
+	g_proc_table[PID_C].m_stack_size = STACK_SIZE;
+	g_proc_table[PID_C].mpf_start_pc = &stress_proc_c;
+	g_proc_table[PID_C].m_priority = HIGH;
 
 	//For the six test processes
 	for (i = 1; i <= NUM_TEST_PROCS; i++ ) {
@@ -79,11 +104,6 @@ void process_init() {
 	/* initilize exception stack frame (i.e. initial context) for each process */
 	for (i = 0; i < NUM_PROCESSES; i++ ) {
 		int j;
-		
-		//avoid modifying procs that don't appear in P1 and P2
-		if (i > PID_P6 && i < PID_WALL_CLOCK) {
-			continue;
-		}
 
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
@@ -100,10 +120,10 @@ void process_init() {
 	}
 
 	//set up ready queue
-	//It contains all test processes as well as null, wall, kcd, and crt
+	//It contains all processes except for the two iprocesses
 	//note: does not change state, they all still count as NEW
 	for ( i = 0; i < NUM_PROCESSES; i++ ) {
-		if ((i <= PID_P6) || (i == PID_WALL_CLOCK) || (i == PID_KCD) || (i == PID_CRT)) {
+		if (i != PID_UART && i != PID_TIMER ) {
 			enqueue(&g_ready_queue, gp_pcbs[i]);
 		}
 	}
@@ -206,8 +226,8 @@ int k_set_process_priority(int process_id, int priority) {
 		return RTX_ERR;
 	}
 	
-	//Only processes 1-6 can have their priorities set
-	if (process_id < PID_P1 || process_id > PID_P6) {
+	//Disallow changing priority of NULL, KCD, CRT, UART, or TIMER
+	if (process_id < PID_P1 || process_id > PID_WALL_CLOCK) {
 		return RTX_ERR;
 	}
 	

@@ -496,6 +496,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\util.c</FilePath>
             </File>
+            <File>
+              <FileName>stress_proc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\stress_proc.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

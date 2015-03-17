@@ -210,7 +210,19 @@ void wall_clock_proc(void) {
 	
 }
 
-//helper functions
+void set_priority_proc() {
+	
+	//register as %C command
+	
+	//correct call is "%C procid newpriority"
+	
+	//If syntax is invalid, need an error message.
+	
+}
+
+//================ PROCESSES END HERE ==========================
+
+//================ HELPER FUNCTIONS BEGIN HERE ================
 
 //parameter is a time in the form (0 = midnight) + (time = #seconds)
 void time_to_hms(int sss, char* target) {
