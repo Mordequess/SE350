@@ -1,9 +1,6 @@
 #include "k_ipc.h"
 #include "k_iprocess.h"
 
-/* ----- Global Variables ----- */
-//message* g_message_queue;				/* Message queue */
-
 //throws message "header" data in the same memory block as the msgbuf
 message* message_new(int sender, int destination, msgbuf* envelope, int delay) {
 	
@@ -164,21 +161,4 @@ message* m_peek(int destination_id) {
 	element = p->m_queue;
 	return element;
 }
-
-/*
-U32 m_any_messages_from_sender(int destination_id, int sender_id) {
-	message* element;
-	pcb* p = get_pcb_pointer_from_process_id(destination_id);
-	element = p->m_queue;
-		
-	if (!m_is_empty(destination_id)) {
-		while (element->sender_id != sender_id) {
-			if (element->mp_next == NULL) return 0;
-			else element = element->mp_next;
-		}
-		return 1;
-	}
-	else return 0;
-}
-*/
 

@@ -88,10 +88,7 @@ void timer_i_process(void) {
 			
 			current_message = m_peek(PID_TIMER);
 			
-			//if priority of receiving process is greater, pre-empt
-			//if (k_get_process_priority(temp->destination_id) <= k_get_process_priority(get_procid_of_current_process())) {
-				g_timer_flag = 1;
-			//}
+			g_timer_flag = 1;
 			
 		} else {
 			current_message = current_message->mp_next;
@@ -193,9 +190,6 @@ void uart_i_process(void) {
 				message_to_crt->mtext[2] = '\0';
       }
 			
-			//message_to_crt->mtext[0] = g_char_in;
-			//message_to_crt->mtext[1] = '\0';	
-			
 			k_send_message(PID_CRT, message_to_crt);
 		
 			//we will want to pre-empt to crt
@@ -265,57 +259,7 @@ void uart_i_process(void) {
             
 			k_release_memory_block(g_msg_uart);
 			
-			
-		/*
-			if (g_msg_uart->mtext[g_output_buffer_index] != '\0' ) {
-				//character is non-null. Write to THR
-			
-#ifdef DEBUG_0
-	uart1_put_string("Writing a char = ");
-	uart1_put_char(g_msg_uart->mtext[g_output_buffer_index]);
-	uart1_put_string("\n\r");
-#endif
-            
-				pUart->THR = g_msg_uart->mtext[g_output_buffer_index];
-            
-				g_output_buffer_index++;
-            
-			} else { //buffer reaches the null terminator.
-            
-				pUart->IER &= (~IER_THRE);
-				pUart->THR = '\0';
-            
-				k_release_memory_block(g_msg_uart);
-            
-				g_output_buffer_index = 0;
-			}
-		*/
 		}
-		
-/*
-		if (*gp_buffer != '\0' ) {
-			g_char_out = *gp_buffer;
-			
-			
-#ifdef DEBUG_0
-			printf("Writing a char = %c \n\r", g_char_out);
-#endif
-			
-			pUart->THR = g_char_out;
-			gp_buffer++;
-			
-		} else {
-			
-#ifdef DEBUG_0
-			uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
-#endif
-			
-			pUart->IER ^= IER_THRE; // toggle the IER_THRE bit 
-			pUart->THR = '\0';
-			g_send_char = 0;
-			gp_buffer = g_buffer;		
-		}
-		*/
 	      
 	} else {  /* not implemented yet */
 		
