@@ -212,11 +212,49 @@ void wall_clock_proc(void) {
 
 void set_priority_proc() {
 	
+	msgbuf* message;
+	msgbuf* error_message;
+	int sender_id;
+	
+	int process_id_to_change;
+	int new_priority;
+	
 	//register as %C command
+	msgbuf* registration_message = request_memory_block();
+	registration_message->mtype = KCD_REG;
+	copy_string("%C", registration_message->mtext);
+	send_message(PID_KCD, registration_message);
 	
 	//correct call is "%C procid newpriority"
-	
 	//If syntax is invalid, need an error message.
+	while (1) {
+		
+		message = receive_message(&sender_id);
+		
+		//TODO: read in the procid and priority from a string and convert them to ints
+		//procid may be 2 digits long
+		//...
+		
+		if (!can_set_process_priority(process_id_to_change) || !is_valid_priority(new_priority)) {
+			
+			//Bad call. Send error message to CRT
+			error_message = request_memory_block();
+			error_message->mtype = CRT_DISP;
+			copy_string("Error: invalid parameters\n\r", error_message->mtext);
+			send_message(PID_CRT, error_message);
+			
+		} else {
+			
+			//TODO: process the valid call
+			
+		}
+		
+		release_memory_block(message);
+		
+	}
+	
+	
+
 	
 }
 

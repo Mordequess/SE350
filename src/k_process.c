@@ -222,12 +222,13 @@ int k_set_process_priority(int process_id, int priority) {
 	pcb* pcb_modified_process = get_pcb_pointer_from_process_id(process_id);
 	
 	//Valid priority values are {0, 1, 2, 3}, with 3 being LOWEST
-	if (priority < HIGH || priority > LOWEST) {
+	if (!is_valid_priority(priority)) {
 		return RTX_ERR;
 	}
 	
-	//Disallow changing priority of NULL, KCD, CRT, UART, or TIMER
-	if (process_id < PID_P1 || process_id > PID_WALL_CLOCK) {
+	//Some processes cannot have their priority changed.
+	//This will also catch invalid process ids
+	if (!can_set_process_priority(process_id)) {
 		return RTX_ERR;
 	}
 	
@@ -311,6 +312,17 @@ pcb *get_pcb_pointer_from_process_id(int process_id) {
 	}
 	
 	return gp_pcbs[process_id];
+}
+
+//States whether it is permissible to set to this priority
+int is_valid_priority(int priority) {
+	return (priority >= HIGH && priority <= LOWEST);
+}
+
+//States whether pid is allowed to have its priority set at runtime
+//Current setting allows everything except NULL, KCD, CRT, UART, and timer
+int can_set_process_priority(int pid) {
+	return (pid >= PID_P1 && pid <= PID_WALL_CLOCK);
 }
 
 //called from memory

@@ -6,7 +6,38 @@
 
 void stress_proc_a() {
 	
+	msgbuf* block;
+	int sender_id;
+	int num;
 	
+	//Register the %Z command
+	msgbuf* registration_message = request_memory_block();
+	registration_message->mtype = KCD_REG;
+	copy_string("%Z", registration_message->mtext);
+	send_message(PID_KCD, registration_message);
+	
+	while(1) {
+		
+		block = receive_message(&sender_id);
+		if (str_len(block->mtext) >= 2 && block->mtext[0] == '%' && block->mtext[1] == 'Z') {
+			release_memory_block(block);
+			break; //exit this while loop
+		} else {
+			release_memory_block(block);
+		}
+		
+	}
+	
+	num = 0;
+	
+	while(1) {
+		block = request_memory_block();
+		block->mtype = COUNT_REPORT;
+		block->mtext[0] = num;
+		send_message(PID_B, block);
+		num++;
+		release_processor();
+	}
 }
 
 /*
