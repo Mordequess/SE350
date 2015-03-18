@@ -36,14 +36,6 @@ volatile uint32_t g_timer_count = 0; // increment every 1 ms
 U32 g_timer_flag = 0;
 U32 g_uart_flag = 0;
 
-/* From LEARN notes
-save the context of the current_process ;
-switch the current_process with timer_i_process ;
-load the timer_i_process context ;
-call the timer_i_process C function ;
-invoke the scheduler to pick next to run process ;
-restore the context of the newly picked process ;
-*/
 __asm void TIMER0_IRQHandler(void)
 {
   PRESERVE8
