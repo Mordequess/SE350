@@ -212,7 +212,7 @@ void uart_i_process(void) {
 			
 //do not put in input buffer if it's a hotkey and hotkeys are defined
 #ifdef _DEBUG_HOTKEYS
-			if (g_char_in != DEBUG_HOTKEY_1 && g_char_in != DEBUG_HOTKEY_2 && g_char_in != DEBUG_HOTKEY_3) {
+			if (g_char_in != DEBUG_HOTKEY_1 && g_char_in != DEBUG_HOTKEY_2 && g_char_in != DEBUG_HOTKEY_3 && g_char_in != DEBUG_HOTKEY_4) {
 				g_input_buffer[g_input_buffer_index] = g_char_in;
 				g_input_buffer_index++;
 			}
