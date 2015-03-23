@@ -27,6 +27,11 @@ void process_hot_key(char c) {
 			print_queue(get_blocked_on_receive_queue());
 			uart1_put_string("====== END OF BLOCKED ON RECEIVE QUEUE =======\n\r");
 			break;
+		case DEBUG_HOTKEY_4:
+			uart1_put_string("====== RUNNING PROCESS ==============\n\r");
+			print_process(get_current_process());
+			uart1_put_string("====== END OF RUNNING PROCESS =======\n\r");
+			
 	}
 }
 

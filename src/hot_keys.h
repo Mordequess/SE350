@@ -4,6 +4,7 @@
 #define DEBUG_HOTKEY_1 '!'
 #define DEBUG_HOTKEY_2 '@'
 #define DEBUG_HOTKEY_3 '#'
+#define DEBUG_HOTKEY_4 '$'
 
 #include "k_rtx.h"
 

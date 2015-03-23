@@ -48,6 +48,7 @@ void block_current_process_on_receive(void);
 int unblock_and_switch_to_blocked_on_memory_process(void);
 int unblock_and_switch_to_blocked_on_receive_process(pcb* );
 int get_procid_of_current_process(void);
+pcb *get_current_process(void);
 
 pcb* get_ready_queue(void);
 pcb* get_blocked_on_memory_queue(void);

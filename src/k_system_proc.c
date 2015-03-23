@@ -26,9 +26,15 @@ void kcd_proc(void) {
 		if (message->mtype == DEFAULT) { 			//handle a command
 			
       char keyboard_command_buffer[MAX_COMMAND_LENGTH];
+			
+			for (i = 0; i < MAX_COMMAND_LENGTH; i++) {
+				keyboard_command_buffer[i] = '\0';
+			}
+			
+			i = 0;
             
 			//read the command from the message mdata
-      while (i < MAX_COMMAND_LENGTH && message->mtext[i] != '\0' && message->mtext[i] != ' ') {
+      while (i < MAX_COMMAND_LENGTH && message->mtext[i] != '\0' && message->mtext[i] != ' ' && message->mtext[i] != '\r') {
         keyboard_command_buffer[i] = message->mtext[i];
         i++;
       }

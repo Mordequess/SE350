@@ -251,7 +251,7 @@ int k_set_process_priority(int process_id, int priority) {
 	} 
 	else if (pcb_modified_process->m_state == BLOCKED_ON_RECEIVE) {
 		remove_queue_node(&g_blocked_on_receive_queue, pcb_modified_process);
-		enqueue(&g_blocked_on_memory_queue, pcb_modified_process);
+		enqueue(&g_blocked_on_receive_queue, pcb_modified_process);
 	} /*else if (pcb_modified_process->m_state == RUNNING) {
 		//enqueue(&g_ready_queue, pcb_modified_process);
 		//pcb_modified_process->m_state = READY;
