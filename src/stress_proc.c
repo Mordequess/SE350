@@ -63,8 +63,6 @@ void stress_proc_c() {
 	msgbuf* hibernation_message;
 	int sender_id;
 	
-	int null_terminator_offset = str_len("Process C");
-	
 	//initialize a local message queue
 	//...
 	
@@ -82,7 +80,6 @@ void stress_proc_c() {
 				
 				//Send "Process C" to CRT with the current_message envelope
 				copy_string("Process C", current_message->mtext);
-				current_message->mtext[null_terminator_offset] = '\0';
 				send_message(PID_CRT, current_message);
 				
 				//hibernate for 10s (send delayed message to itself)
@@ -106,7 +103,4 @@ void stress_proc_c() {
 		release_memory_block(current_message);
 		release_processor();
 	}
-	
-	
 }
-

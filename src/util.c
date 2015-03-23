@@ -49,3 +49,38 @@ int str_len(char s[]) {
 	}
 	return i;
 }
+
+
+int get_int_from_string(char *s) {
+	int i = 0;
+	int x = 0;
+	int temp = s[0];
+	int isFirstDigit = 1;
+	
+	if (temp == 0 || temp == '\r' || temp == ' ') {
+		return -1;
+	}
+	
+	while (!(temp == 0 || temp == '\r' || temp == ' ')) {
+		temp = s[i] - 0x30;
+		
+		//If digit out of range, leave.
+		if (temp > 9 || temp < 0) {
+			return -1;
+		}
+		
+		//Before adding a new digit, multiply by 10
+		if (!isFirstDigit) {
+			x *= 10;
+		}
+		
+		x += temp;
+		i++;
+		temp = s[i];
+		
+		isFirstDigit = 0;
+		
+	}
+	
+	return x;
+}

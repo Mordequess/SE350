@@ -231,9 +231,23 @@ void set_priority_proc() {
 		
 		message = receive_message(&sender_id);
 		
-		//TODO: read in the procid and priority from a string and convert them to ints
-		//procid may be 2 digits long
-		//...
+		process_id_to_change = get_int_from_string(&(message->mtext[3]));
+		
+		if (process_id_to_change >= 0 && process_id_to_change <= 9) {
+			
+			new_priority = get_int_from_string(&(message->mtext[5]));
+			
+		} else if (process_id_to_change >= 10 && process_id_to_change <= NUM_PROCESSES) {
+			
+			//Process id was two digits.
+			new_priority = get_int_from_string(&(message->mtext[6]));
+			
+		} else {
+			
+			//malformed command. Set to something invalid.
+			new_priority = RTX_ERR;
+			
+		}
 		
 		if (!can_set_process_priority(process_id_to_change) || !is_valid_priority(new_priority)) {
 			
@@ -244,17 +258,13 @@ void set_priority_proc() {
 			send_message(PID_CRT, error_message);
 			
 		} else {
-			
-			//TODO: process the valid call
-			
+			//Call the set priority primitive.
+			set_process_priority(process_id_to_change, new_priority);
 		}
 		
 		release_memory_block(message);
 		
 	}
-	
-	
-
 	
 }
 
