@@ -65,14 +65,35 @@ void stress_proc_c() {
 	
 	//initialize a local message queue
 	//...
+	// probably just use memory given at compile time.
+	lmsg* local_q_head = NULL;
+	lmsg* local_q_tail = NULL;
+	lmsg* temp = NULL;
+	// use space in each memory block - the lmsg* struct lives after 50B
+	// arbitrary
 	
 	while(1) {
 		
-		//if (local message queue is empty)
+		if ((local_q_head == NULL)&&(local_q_tail == NULL)) {
 			current_message = receive_message(&sender_id);
-		//else
-			//current_message is dequeued off the queue
-		//endif
+
+			temp = (lmsg *)(current_message + 50*sizeof(char)); // offset of 50B
+			temp->content = current_message;
+			temp->next = NULL;
+			local_q_head = temp;
+			local_q_tail = local_q_head;
+			// case where the queue was empty
+		}
+		else {
+			/* current_message is dequeued off the queue */
+			temp = local_q_head;
+			local_q_head = local_q_head->next;
+			if(local_q_head == NULL) {
+				local_q_tail = NULL; // emptied out
+			}
+			current_message = temp->content;
+			temp->next = NULL; // necessary? perhaps not
+		}
 		
 		
 		if (current_message->mtype == COUNT_REPORT) {
@@ -95,6 +116,11 @@ void stress_proc_c() {
 						break;
 					} else {
 						//TODO: put message on local queue for later processing
+						temp = (lmsg *)(current_message + 50*sizeof(char)); // offset of 50B
+						temp->content = current_message;
+						temp->next = NULL;
+						local_q_tail->next = temp;
+						local_q_tail = temp;
 					}
 				}
 			}		
