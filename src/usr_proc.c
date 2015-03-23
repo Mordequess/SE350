@@ -9,6 +9,8 @@
 #include "printf.h"
 #endif 
 
+#define NUM_BLOCKS 30
+
 const int RUN_LENGTH = 27;
 int expected_proc_order[] = 
 {
@@ -218,13 +220,17 @@ void proc3(void) {
 	
 	add_to_order(3);
 	
-	// Hog all the 100 memory blocks
-	for (i = 0; i < 100; i++) {
+	// Hog all the memory blocks
+	while (hasFreeSpace()) {
 		mem_ptr[i] = request_memory_block();
 		if (mem_ptr[i] == NULL) {
 			testPassed = 0;
 		}
+		i++;
 	}
+	
+	//Undo the last increment
+	i--;
 	
 	//test an invalid release
 	status = release_memory_block((void*)1);
@@ -249,18 +255,19 @@ void proc3(void) {
 	
 	//by releasing a block, P1 will become unblocked.
 	//P1 and P3 are HIGH, P2 is MEDIUM. P1 takes over.
-	release_memory_block(mem_ptr[0]);
+	release_memory_block(mem_ptr[i]);
+	i--;
 	
 	//back in P3.
 	add_to_order(3);
 	testPassed = 1;
 	
-	for (i = 1; i < 99; i++) {
+	for (; i > 0; i--) {
 		status = release_memory_block(mem_ptr[i]);
 		if (status != RTX_OK) testPassed = 0;
 	}
 	
-	status = release_memory_block(mem_ptr[99]);
+	status = release_memory_block(mem_ptr[0]);
 	if (status != RTX_OK) testPassed = 0;
 	
 	//releasing should never have pre-empted.
@@ -406,13 +413,13 @@ void proc6(void){
 
 	add_to_order(6);
 	//will get blocked on memory, go to 4
-	for (i = 0; i < 100; ++i) {
+	for (i = 0; i < NUM_BLOCKS; ++i) {
 		mem[i] = request_memory_block();
 	}
 	
 	add_to_order(6);
 
-	for (i = 0; i < 100; ++i) {
+	for (i = 0; i < NUM_BLOCKS; ++i) {
 		release_memory_block(mem[i]);
 	}
 
