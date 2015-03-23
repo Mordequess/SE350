@@ -79,19 +79,19 @@ void process_init() {
 	g_proc_table[PID_A].m_pid = PID_A;
 	g_proc_table[PID_A].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_A].mpf_start_pc = &stress_proc_a;
-	g_proc_table[PID_A].m_priority = HIGH;
+	g_proc_table[PID_A].m_priority = LOWEST;
 	
 	//Stress process B
 	g_proc_table[PID_B].m_pid = PID_B;
 	g_proc_table[PID_B].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_B].mpf_start_pc = &stress_proc_b;
-	g_proc_table[PID_B].m_priority = HIGH;
+	g_proc_table[PID_B].m_priority = LOWEST;
 	
 	//Stress process C
 	g_proc_table[PID_C].m_pid = PID_C;
 	g_proc_table[PID_C].m_stack_size = STACK_SIZE;
 	g_proc_table[PID_C].mpf_start_pc = &stress_proc_c;
-	g_proc_table[PID_C].m_priority = HIGH;
+	g_proc_table[PID_C].m_priority = LOWEST;
 
 	//For the six test processes
 	for (i = 1; i <= NUM_TEST_PROCS; i++ ) {
@@ -316,13 +316,15 @@ pcb *get_pcb_pointer_from_process_id(int process_id) {
 
 //States whether it is permissible to set to this priority
 int is_valid_priority(int priority) {
-	return (priority >= HIGH && priority <= LOWEST);
+	if (priority >= HIGH && priority <= LOWEST) return 1;
+	return 0;
 }
 
 //States whether pid is allowed to have its priority set at runtime
 //Current setting allows everything except NULL, KCD, CRT, UART, and timer
 int can_set_process_priority(int pid) {
-	return (pid >= PID_P1 && pid <= PID_WALL_CLOCK);
+	if (pid >= PID_P1 && pid <= PID_WALL_CLOCK) return 1;
+	return 0;
 }
 
 //called from memory

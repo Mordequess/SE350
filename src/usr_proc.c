@@ -373,7 +373,7 @@ void proc5(void){
 	message = request_memory_block();
 	message->mtype = DEFAULT;
 	message->mtext[0] = 'S';
-	delayed_send(5, message, 5);
+	delayed_send(5, message, 1000);
 	message = receive_message(&sender_id);
 
 	add_to_order(5);
