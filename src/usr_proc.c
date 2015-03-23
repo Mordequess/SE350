@@ -9,7 +9,7 @@
 #include "printf.h"
 #endif 
 
-#define NUM_BLOCKS 30
+//#define NUM_BLOCKS 30
 
 const int RUN_LENGTH = 27;
 int expected_proc_order[] = 

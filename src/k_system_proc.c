@@ -260,7 +260,7 @@ void set_priority_proc() {
 			//Bad call. Send error message to CRT
 			error_message = request_memory_block();
 			error_message->mtype = CRT_DISP;
-			copy_string("Error: invalid parameters\n\r", error_message->mtext);
+			copy_string("Error\n\r", error_message->mtext);
 			send_message(PID_CRT, error_message);
 			
 		} else {

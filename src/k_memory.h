@@ -11,6 +11,7 @@ extern pcb **gp_pcbs;
 extern U32 Image$$RW_IRAM1$$ZI$$Limit;
 
 #define RAM_END_ADDR 0x10008000
+#define NUM_BLOCKS 30
 #define BLOCK_SIZE 0x80
 
 typedef struct heap_blk {
@@ -20,7 +21,7 @@ typedef struct heap_blk {
 
 //heap allocate enough space for X (currently 30) memory blocks + one heap header
 #define HEAP_START_ADDR (0x10001000 - sizeof(heap_blk)) //arbitrarily chosen to leave enough space on either side
-#define HEAP_END_ADDR 0x10001F00 //(HEAP_START_ADDR + BLOCK_SIZE * 2 + sizeof(heap_blk *))
+#define HEAP_END_ADDR (HEAP_START_ADDR + BLOCK_SIZE * NUM_BLOCKS + sizeof(heap_blk)) //0x10001F00 
 
 void memory_init(void);
 U32 *alloc_stack(U32 size_b);

@@ -4,6 +4,51 @@
 #include "k_iprocess.h"
 #include "util.h"
 
+message* local_queue;
+
+message* local_message_new(msgbuf* envelope) {
+	
+	message* m = (message *)((U32)envelope + sizeof(msgbuf));
+	m->message_envelope = envelope;
+	//m->sender_id = sender;
+	//m->destination_id = destination;
+	//m->expiry_time = get_system_time() + delay;
+	m->mp_next = NULL;
+	return m;
+}
+
+void local_enqueue(message* element) {
+	message* temp = local_queue;
+	
+	//check if empty
+	if (local_queue == NULL) {
+		local_queue = element;
+		element->mp_next = NULL;
+		return;
+	}
+
+	//iterate through to find end
+	while (temp->mp_next != NULL) {
+		temp = temp->mp_next;
+	}
+
+	//insert
+	element->mp_next = NULL;
+	temp->mp_next = element;
+}
+
+//Remove and return a node from the front end of the queue
+message* local_dequeue() {
+	message* element = local_queue;
+	
+	if (local_queue != NULL) {
+		local_queue = local_queue->mp_next;
+		element->mp_next = NULL;
+		return element;
+	}
+	return NULL; //null if nothing to dequeue
+}
+
 void stress_proc_a() {
 	
 	msgbuf* block;
@@ -58,11 +103,11 @@ void stress_proc_b() {
 }
 
 void stress_proc_c() {
-	
+	message* wrapper;
 	msgbuf* current_message;
 	msgbuf* hibernation_message;
 	int sender_id;
-	
+	local_queue = NULL;
 	//initialize a local message queue
 	//...
 	
@@ -79,7 +124,8 @@ void stress_proc_c() {
 			if (current_message->mtext[0] % 20 == 0) {
 				
 				//Send "Process C" to CRT with the current_message envelope
-				copy_string("Process C", current_message->mtext);
+				copy_string("Process C\n\r", current_message->mtext);
+				current_message->mtype = CRT_DISP;
 				send_message(PID_CRT, current_message);
 				
 				//hibernate for 10s (send delayed message to itself)
@@ -92,15 +138,23 @@ void stress_proc_c() {
 				while(1) {
 					current_message = receive_message(&sender_id);
 					if (current_message->mtype == WAKEUP10) {
+						while(local_queue != NULL) {
+							send_message(PID_C, local_dequeue()->message_envelope);
+						}
 						break;
 					} else {
+						wrapper = local_message_new(current_message);
+						local_enqueue(wrapper);
 						//TODO: put message on local queue for later processing
 					}
 				}
-			}		
+			}
+				
+			else {
+				release_memory_block(current_message);
+			}
 		}
 		
-		release_memory_block(current_message);
 		release_processor();
 	}
 }
