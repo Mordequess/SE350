@@ -8,6 +8,7 @@
 \usepackage{courier}
 \usepackage{tikz}
 \usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \lstset{basicstyle=\footnotesize\ttfamily}
 
@@ -39,6 +40,9 @@
 \chapter{Introduction}
 
 \chapter{Design Description}
+
+\section{Global Variables and Structures}
+
 
 \section{Memory Management}
 
@@ -115,8 +119,6 @@
 
 \section{User Processes}
 
-\subsection{User Test Processes}
-
 \subsection{Wall Clock Process}
 
 \subsection{Set Priority Process}
@@ -124,9 +126,57 @@
 \subsection{Stress Test Processes}
 
 
-\chapter{Timing and Analysis}
+
+
+
+\section{Initialization}
+
+
+
+
+
+\section{Testing}
+
+
+
+
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+
+/* PUT C Code here */
+
+\end{lstlisting}
+\end{minipage}
+
+\begin{algorithm}
+  \caption{This is an algorithm}
+  \begin{algorithmic}[1]
+    \Function{foo}{}
+      \For{$i = 0$ to $n$}
+        \If{i is prime}
+          \State return i
+        \EndIf
+      \EndFor
+    \State return not found
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+\chapter{Major Design Changes}
+
+\section{Structure of Process Queue}
+
+%Add more sections as appropriate
 
 
 \chapter{Lessons Learned}
+
+
+
+
+\chapter{Timing and Analysis}
+
+
+
 
 \end{document}
