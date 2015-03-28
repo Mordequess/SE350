@@ -1,14 +1,20 @@
 \documentclass[12pt]{report}
 
 \usepackage[letterpaper, hmargin=0.75in, vmargin=0.75in]{geometry}
-\usepackage{float}
-\usepackage{url}
-\usepackage{listings}
-\usepackage{graphicx}
-\usepackage{courier}
-\usepackage{tikz}
-\usepackage{algorithm}
-\usepackage{algpseudocode}
+
+\usepackage{
+    courier,
+    algorithm,
+    algpseudocode,
+    listings,
+    underscore,
+    authblk,
+    hyperref,
+    tikz,
+    tabularx,
+    float,
+	 color
+}
 
 \lstset{basicstyle=\footnotesize\ttfamily}
 
@@ -39,18 +45,29 @@
 
 \chapter{Introduction}
 
+\textcolor{red}{\textbf{Kelly}} \\
+
 \chapter{Design Description}
 
 \section{Global Variables and Structures}
 
+\textcolor{red}{\textbf{Kelly}} \\
 
 \section{Memory Management}
 
 \subsection{Memory Structure}
 
+\textcolor{red}{\textbf{Tyler}} \\
+
 \subsection{Requesting Memory Blocks}
 
+\textcolor{red}{\textbf{Tyler}} \\
+
 \subsection{Releasing Memory Blocks}
+
+\textcolor{red}{\textbf{Tyler}} \\
+
+
 
 
 
@@ -60,11 +77,17 @@
 
 \subsection{Process Control Structures}
 
+\textcolor{red}{\textbf{Kelly}} \\
 
 \subsection{Process Queues}
 
+\textcolor{red}{\textbf{Tyler}} \\
+
 
 \subsection{Process Scheduling}
+
+
+\textcolor{red}{\textbf{Kelly}} \\
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,8 +96,12 @@
 
 \subsection{Get Process Priority}
 
+\textcolor{red}{\textbf{Peter}} \\
+
 
 \subsection{Set Process Priority}
+
+\textcolor{red}{\textbf{Tyler}} \\
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,14 +110,20 @@
 
 \subsection{Message Structure}
 
+\textcolor{red}{\textbf{Kelly}} \\
+
 
 \subsection{Sending Messages}
 
+\textcolor{red}{\textbf{Tyler}} \\
 
 \subsection{Receiving Messages}
 
+\textcolor{red}{\textbf{Tyler}} \\
 
 \subsection{Delayed Send}
+
+\textcolor{red}{\textbf{Peter}} \\
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -98,9 +131,12 @@
 
 \subsection{UART I-Process}
 
-
+\textcolor{red}{\textbf{Peter}} \\
 
 \subsection{Timer I-Process}
+
+\textcolor{red}{\textbf{Peter}} \\
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -108,12 +144,60 @@
 
 \subsection{Null Process}
 
+\textcolor{red}{\textbf{Peter}} \\
+
+The null process has the lowest priority of any process in the operating system. It runs only when there are no ready processes to be run. When it runs, all it does is invoke {\tt k\_release\_processor()} so that the kernel can check if there is a ready process to be run.
+
+\begin{algorithm}
+  \caption{The null system process}
+  \begin{algorithmic}[1]
+    \Procedure{null\_process}{}
+      \While{true}
+			\State \Call{k_release_processor}{\null}
+		\EndWhile
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 \subsection{KCD Process}
 
+\textcolor{red}{\textbf{Peter}}
+
+The Keyboard Command Decoder process exists so that users can send console commands to the system at runtime. A command can be registered by sending the KCD process a {\tt KCD\_REG} type message. The KCD maintains a list of registered commands inside an array. When a {\tt DEFAULT} command is sent to the KCD, the KCD will try to identify the message type, and will send the message to the appropriate process if it recognizes the command in its array. The KCD process is an intermediary between the UART i-process (which registers the keystrokes) and the eventual receiving message (which executes the command).\\
+
+\begin{algorithm}
+  \caption{The null system process}
+  \begin{algorithmic}[1]
+    \Procedure{null_process}{}
+      \While{true}
+			\State \Call{k_release_processor}{\null}
+		\EndWhile
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 \subsection{CRT Process}
 
+\textcolor{red}{\textbf{Peter}} \\
+
+The CRT process is used to print text to the system console. The process waits for messages of type {\tt CRT\_DISP}. If it receives such a message, it will send it to the UART i-process and modify the {\tt IER} register so that the UART treats the message as an output message rather than an input. The UART will then output the text message to the console.\\
+
+\begin{algorithm}
+  \caption{The CRT Process}
+  \begin{algorithmic}[1]
+    \Procedure{crt_process}{}
+      \While{true}
+			\State message = \Call{receive_message}{\null}
+			\If {message is of type CRT_DISPLAY}
+				\State Send message to UART iprocess
+				\State Set interrupt bits
+			\Else
+				\State \Call{release_memory_block}{message}
+			\EndIf
+		\EndWhile
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -121,23 +205,27 @@
 
 \subsection{Wall Clock Process}
 
+\textcolor{red}{\textbf{Peter}} \\
+
 \subsection{Set Priority Process}
+
+\textcolor{red}{\textbf{Peter}} \\
 
 \subsection{Stress Test Processes}
 
-
+\textcolor{red}{\textbf{Peter}} \\
 
 
 
 \section{Initialization}
 
-
+\textcolor{red}{\textbf{Kelly}} \\
 
 
 
 \section{Testing}
 
-
+\textcolor{red}{\textbf{Tyler}} \\
 
 
 \begin{minipage}{\textwidth}
@@ -164,19 +252,23 @@
 
 \chapter{Major Design Changes}
 
+\textcolor{red}{\textbf{Add more sections as appropriate}} \\
+
 \section{Structure of Process Queue}
 
-%Add more sections as appropriate
+\textcolor{red}{\textbf{Tyler}} \\
+
+
 
 
 \chapter{Lessons Learned}
 
-
+\textcolor{red}{\textbf{Everyone contribute something}} \\
 
 
 \chapter{Timing and Analysis}
 
-
+\textcolor{red}{\textbf{This still needs to be programmed}} \\
 
 
 \end{document}
