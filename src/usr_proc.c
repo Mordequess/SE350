@@ -5,11 +5,11 @@
 #include "k_ipc.h"
 #include "k_iprocess.h"
 
-#ifdef DEBUG_0
 #include "printf.h"
-#endif 
 
-//#define NUM_BLOCKS 30
+#define TIMER_RESET (1 << 1) | (1 << 0);
+#define TIMER_START (0 << 1) | (1 << 0);
+#define TIMER_STOP (0 << 0);
 
 const int RUN_LENGTH = 27;
 int expected_proc_order[] = 
@@ -345,6 +345,10 @@ void proc5(void){
 	int testPassed = 1;
 	int sender_id = NULL;
 	
+	int i;
+	void* test_blocks[10];
+	int elapsed_time;
+	
 	msgbuf* message = request_memory_block();
 	add_to_order(5);
 	message->mtype = DEFAULT;
@@ -373,7 +377,7 @@ void proc5(void){
 	message = request_memory_block();
 	message->mtype = DEFAULT;
 	message->mtext[0] = 'S';
-	delayed_send(5, message, 1000);
+	delayed_send(5, message, 5);
 	message = receive_message(&sender_id);
 
 	add_to_order(5);
@@ -382,7 +386,6 @@ void proc5(void){
 	}
 	release_memory_block(message);
 	
-	//submit test, should go on to p7 (or end)
 	submit_test("8", testPassed);
 	
 	uart0_put_string("G028_test: ");
@@ -398,6 +401,44 @@ void proc5(void){
 	uart0_put_string(" tests FAIL \n\r");
 	
 	uart0_put_string("G028_test: END\n\r");
+	
+	
+	//The base tests have been completed. The code below is for timing analysis
+	
+	LPC_TIM1->TCR = TIMER_RESET;
+  LPC_TIM1->TCR = TIMER_START;
+	for (i = 0; i < 10; i++) {
+		test_blocks[i] = request_memory_block();
+	}
+	LPC_TIM1->TCR = TIMER_STOP;
+	elapsed_time = LPC_TIM1->TC;
+	
+	printf("10 requests took %d time\n\r", elapsed_time);
+	
+	LPC_TIM1->TCR = TIMER_RESET;
+  LPC_TIM1->TCR = TIMER_START;
+	for (i = 0; i < 10; i++) {
+		send_message(PID_P5, test_blocks[i]);
+	}
+	LPC_TIM1->TCR = TIMER_STOP;
+	elapsed_time = LPC_TIM1->TC;
+	
+	printf("10 sends took %d time\n\r", elapsed_time);
+	
+	LPC_TIM1->TCR = TIMER_RESET;
+  LPC_TIM1->TCR = TIMER_START;
+	for (i = 0; i < 10; i++) {
+		receive_message(NULL);
+	}
+	LPC_TIM1->TCR = TIMER_STOP;
+	elapsed_time = LPC_TIM1->TC;
+	
+	printf("10 receives took %d time\n\r", elapsed_time);
+	
+	//Timing tests are over. Release the blocks.
+	for (i = 0; i < 10; i++) {
+		release_memory_block(test_blocks[i]);
+	}
 
 	set_process_priority(5, LOWEST);
 	
