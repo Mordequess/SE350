@@ -18,6 +18,8 @@
 
 \lstset{basicstyle=\footnotesize\ttfamily}
 
+\setlength{\parindent}{0pt}
+
 \begin{document}
 
 \title{RTX Operating System Report}
@@ -35,6 +37,8 @@
 		20484453\\
     \texttt{psocha@uwaterloo.ca}
 }
+
+\date{April 6, 2015}
 
 \maketitle
 
@@ -98,6 +102,20 @@
 
 \textcolor{red}{\textbf{Peter}} \\
 
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+int k_get_process_priority(int process_id);
+\end{lstlisting}
+\end{minipage}
+
+The {\tt k\_get\_process\_priority} primitive is used to get the priority of a process. It takes a process ID as an input parameter. It outputs one of two things:\\
+
+\begin{itemize}
+\item The process's {\tt m\_priority} member if the process id is valid
+\item {\tt RTX\_ERR} (equal to -1) if the process id is invalid
+\end{itemize}
+
+{\tt k\_get\_process\_priority} never modifies any process and never modifies any process queues.\\
 
 \subsection{Set Process Priority}
 
@@ -125,6 +143,33 @@
 
 \textcolor{red}{\textbf{Peter}} \\
 
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+int k_delayed_send(int process_id, void *message_envelope, int delay);
+\end{lstlisting}
+\end{minipage}
+
+The purpose of delayed sending is so that messages are not received immediately. A message will not end up in the message queue of the receiving process until after a delay period has passed. {\tt k\_delayed\_send} is the kernel primitive used to facilitate such message-passing.\\
+
+The procedure begins by verifying its parameters, returning {\tt RTX_ERR} if any of the values are unacceptable. It then creates a {\tt message} structure using {\tt message\_new} with a delay equal to the {\tt delay} argument given. In regular message-sending, the {\tt delay} variable is set to zero. The message is finally enqueued on the message queue of the timer i-process. Regardless of the message's intended destination, it is given first to the timer i-process and all later handling is done by the timer i-process.\\
+
+\begin{algorithm}
+  \caption{The delayed send function}
+  \begin{algorithmic}[1]
+    \Procedure{delayed\_send}{processID, message, delay}
+      \If{delay is negative}
+			\State {return RTX_ERR}
+		\EndIf
+		\If{No process has id processID}
+			\State {return RTX_ERR}
+		\EndIf
+		\State {m = create message object with expiry time of now + delay}
+		\State {enqueue m on the timer iprocess's message queue}
+		\State {return RTX_OK}
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Interrupts and I-Processes}
@@ -133,9 +178,97 @@
 
 \textcolor{red}{\textbf{Peter}} \\
 
+The UART i-process has two functions:
+
+\begin{itemize}
+\item Read characters entered through the keyboard
+\item Output characters to the screen
+\end{itemize}
+
+The uart iprocess sometimes sends messages to the KCD and CRT processes. If this happens, a {\tt g\_uart\_flag} variable is set to 1. When the iprocess completes, the asssembly routine that handles the interrupt checks the value of {\tt g\_uart\_flag}. If the flag is true, it will call {\tt k\_release\_processor()} to give KCD and CRT a chance to immediately run.\\
+
+\begin{algorithm}
+  \caption{The uart iprocess}
+  \begin{algorithmic}[1]
+    \Procedure{uart_i_process}{}
+		\State {g_uart_flag = 0}
+		\If {receive data available}
+			\State {read g\_char\_in from register}
+			\If {_DEBUG_HOTKEYS is enabled}
+				\State \Call{process_hot_key}{g_char_in}
+			\EndIf
+			\If {heap space is available}
+				\State {m = \Call{k_request_memory_block}{}}
+				\State {Set the mtype of m to CRT_DISP}
+				\State {Set the mtext of m to g_char_in}
+				\State {Send m as a message to the CRT process}
+				\State {g_uart_flag = 1}
+			\EndIf
+
+			\If {g_char_in is a carriage return} 
+				\If {heap space is available}
+					\State {m = \Call{k_request_memory_block}{}}
+					\State {Set the mtype of m to DEFAULT}
+					\State {Set the mtext of m to g_input_buffer}
+					\State {Send m as a message to the KCD process}
+					\State {g_uart_flag = 1}
+				\EndIf
+				\State {reset the g_input_buffer}
+			\Else
+				\State {append g_char_in to g_input_buffer}
+			\EndIf
+
+		\ElsIf {output data available}
+			\State {Receive the message m}
+			\State {Output the mtext of m until the null terminator is reached}
+			\State \Call{k_release_memory_block}{m}
+		\EndIf
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+The i-process's functionality requires it to request memory in order to make messages. In order to prevent the i-process from ever getting blocked, it never allocates memory if there is no free space available.\\
+
+When the {\tt \_DEBUG\_HOTKEYS} flag is enabled, a set of characters has special status. When one of the characters below is typed, a message is printed to the screen using uart1. The messages consist of lists of processes, with the process id and priority stated line by line. These characters can be pressed at any time are not counted towards strings used for command-passing.\\
+
+\begin{itemize}
+
+\item {\tt !} prints the processes on the ready queue\\
+\item {\tt @} prints the processes on the blocked-on-memory queue\\
+\item {\tt \#} prints the processes on the blocked-on-receive queue\\
+\item {\tt \$} prints the process that is currently running\\
+
+\end{itemize}
+
+
 \subsection{Timer I-Process}
 
 \textcolor{red}{\textbf{Peter}} \\
+
+The timer i-process is called by the timer interrupt handler, which runs 1000 times each second. The purpose of the iprocess is to send delayed messages and to update the global timer count {\tt g\_timer\_count}.\\
+
+The timer i-process treats its message queue differently than the other processes in the RTX. Instead of popping messages off of its queue one at a time, it scans the entire queue each time it runs. The expiry time of each message is compared with the current time and the message is sent to the destination process if the expiry time has passed. A special non-preemptive message-sending procedure is used so that the i-process is not pre-empted before it has finished scanning the queue. This non-preemptive sender places the receiving process on the ready queue but does not run it. Instead, a flag variable {\tt g\_timer\_flag} is set that will cause {\tt k\_release\_processor()} to run when the i-process is finished (this call is not made in the process, but in the assembly wrapper that handles the interrupt).\\
+
+The timer i-process does not use {\tt receive\_message()} to read its queue and therefore never gets blocked.\\
+
+\begin{algorithm}
+  \caption{The Timer iprocess}
+  \begin{algorithmic}[1]
+    \Procedure{timer_i_process}{}
+		\State {disable interrupts}
+		\State {increment g_timer_count}
+		\State {g_timer_flag = 0}
+      \For{message m in the timer iprocess's message queue}
+			\If {m's expiry_time is less than the present time}
+				\State {g_timer_flag = 1}
+				\State {remove m from the timer iprocess's message queue}
+				\State {send the message to its desintation process without preempting}
+			\EndIf
+		\EndFor
+		\State{enable interrupts}
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -163,24 +296,37 @@ The null process has the lowest priority of any process in the operating system.
 
 \textcolor{red}{\textbf{Peter}}
 
-The Keyboard Command Decoder process exists so that users can send console commands to the system at runtime. A command can be registered by sending the KCD process a {\tt KCD\_REG} type message. The KCD maintains a list of registered commands inside an array. When a {\tt DEFAULT} command is sent to the KCD, the KCD will try to identify the message type, and will send the message to the appropriate process if it recognizes the command in its array. The KCD process is an intermediary between the UART i-process (which registers the keystrokes) and the eventual receiving message (which executes the command).\\
+The Keyboard Command Decoder process exists so that users can send console commands to the system at runtime. A command can be registered by sending the KCD process a {\tt KCD\_REG} type message. The KCD maintains a list of registered commands inside an array. When a {\tt DEFAULT} command is sent to the KCD, the KCD will try to recognize the command. If the command is found, the KCD will send a message to the process that registered the command; the message will have the {\tt KCD_DISPATCH} type. In both cases, the contents of the command are stored inside the message's {\tt mtext}. The KCD process is an intermediary between the UART i-process (which registers the keystrokes) and the eventual receiving message (which executes the command).\\
 
 \begin{algorithm}
-  \caption{The null system process}
+  \caption{The KCD System Process}
   \begin{algorithmic}[1]
-    \Procedure{null_process}{}
+    \Procedure{KCD_process}{}
       \While{true}
-			\State \Call{k_release_processor}{\null}
+			\State message = \Call{receive_message}{\null}
+			\If {message is of type DEFAULT}
+				\State Read the mtext up to first whitespace or newline
+				\State Try finding the mtext in the command array
+				\If {command is found}
+					\State Send KCD_DISPATCH message to the process that registered the command. Send the entire mtext as contents.
+				\EndIf
+			\ElsIf {message is of type KCD_REG} 
+				\State Read the mtext and sending process
+				\State Add the command to the command array
+			\EndIf
+			\State \Call{release_memory_block}{message}
 		\EndWhile
     \EndProcedure
   \end{algorithmic}
 \end{algorithm}
 
+The KCD process assumes that command strings contain no whitespace. It assumes that any information between the first space and the end of the line is supplementary.\\
+
 \subsection{CRT Process}
 
 \textcolor{red}{\textbf{Peter}} \\
 
-The CRT process is used to print text to the system console. The process waits for messages of type {\tt CRT\_DISP}. If it receives such a message, it will send it to the UART i-process and modify the {\tt IER} register so that the UART treats the message as an output message rather than an input. The UART will then output the text message to the console.\\
+The CRT process is used to print text to the system console. The process waits for messages of type {\tt CRT\_DISP}. If it receives such a message, it will send it to the UART i-process and modify the {\tt IER} register so that the UART treats the message as an output message. The UART is interrupted and therefore the UART i-process will start to run immediately.\\
 
 \begin{algorithm}
   \caption{The CRT Process}
@@ -207,15 +353,66 @@ The CRT process is used to print text to the system console. The process waits f
 
 \textcolor{red}{\textbf{Peter}} \\
 
+The wall clock process is used to display the time in 24-hour format. If the clock is on, it will print the time on the screen each second by sending messages to the CRT process. The process maintains second-by-second timing by sending itself delayed messages with a delay of 1000 milliseconds.\\
+
+The wall clock process registers three commands with the KCD when it initializes. By typing commands into the console, the user can control the wall clock's behaviour. When the process launches, the wall clock starts as inactive.\\
+
+\begin{itemize}
+
+\item {\tt \%WR} - Sets the clock time to 00:00:00 and sets the clock to active.\\
+\item {\tt \%WT} - Sets the clock to inactive. Cancels any scheduled future clock ticks.\\
+\item {\tt \%WS hh:mm:ss} - Sets the clock to active with the given time in 24-hour format.\\
+
+\end{itemize}
+
+The wall clock process relies on memory blocks to send display messages to the CRT process and to send itself delayed messages to re-awaken itself. If system memory has been depleted, it will be unable to properly funcion.\\
+
 \subsection{Set Priority Process}
 
 \textcolor{red}{\textbf{Peter}} \\
+
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+%C process_id new_priority
+\end{lstlisting}
+\end{minipage}
+
+The {\tt set\_process\_priority()} primitive described earlier can be used to programmatically change the priority of any process that is not a system process. It is, however, a programmatic call that must be set in user code in advance. The Set Priority process allows users to change the priority of a process at runtime using the {\tt \%C} command.\\
+
+The priority change takes effect immediately. If the user enters invalid parameters, "Error" will be printed to the screen and the command will be ignored.\\
+
+\begin{algorithm}
+  \caption{The Set Priority Process}
+  \begin{algorithmic}[1]
+    \Procedure{set_priority_proc}{}
+		\State{register with KCD as \%C command}
+      \While{true}
+			\State message = \Call{receive_message}{\null}
+			\State parse message mtext to get a process_id and new_priority
+			\If {Setting process_id to new_priority is a valid operation}
+				\State \Call{set_process_priority}{process_id}{new_priority}
+			\Else
+				\State {make and send an "Error" message to CRT}
+			\EndIf
+			\State \Call{release_memory_block}{message}
+		\EndWhile
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 \subsection{Stress Test Processes}
 
 \textcolor{red}{\textbf{Peter}} \\
 
+The stress test processes are a collection of three user processes called A, B, and C. The three of them are used to test how the system copes with the depletion of heap blocks in memory.\\
 
+Process A waits until it receives a {\tt \%Z} command, after which it will repeatedly request memory, make messages, and send those messages to Process B.\\
+
+Process B receives messages from A and sends them to Process C.\\
+
+Process C receives messages from Process B. Every 20th message, it prints "Process C" to the screen by modifying B's message and passing it to the CRT. Every 20th message, it will then request a memory block and send itself a delayed {\tt WAKEUP10} message to be received in 10 seconds. During those 10 seconds, it goes into a hibernation state, receiving messages from B and putting them on its local queue, but otherwise not doing anything.\\
+
+In general, Process A requests memory blocks and Process C ends up releasing them. If Process C's priority is too low, memory blocks may end up never being released and we may end up in deadlock.\\
 
 \section{Initialization}
 
@@ -227,28 +424,6 @@ The CRT process is used to print text to the system console. The process waits f
 
 \textcolor{red}{\textbf{Tyler}} \\
 
-
-\begin{minipage}{\textwidth}
-\begin{lstlisting}[language=C, frame=single]
-
-/* PUT C Code here */
-
-\end{lstlisting}
-\end{minipage}
-
-\begin{algorithm}
-  \caption{This is an algorithm}
-  \begin{algorithmic}[1]
-    \Function{foo}{}
-      \For{$i = 0$ to $n$}
-        \If{i is prime}
-          \State return i
-        \EndIf
-      \EndFor
-    \State return not found
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
 
 \chapter{Major Design Changes}
 
@@ -265,10 +440,46 @@ The CRT process is used to print text to the system console. The process waits f
 
 \textcolor{red}{\textbf{Everyone contribute something}} \\
 
+\section{Source Control and Code Management}
+
+We used GitHub as a repository for our code, which proved to be very helpful. However, we never developed any systematic protocols for using GitHub and we did not take advantage of many of its features.\\
+
+Nearly all development was done on the master branch and was pushed directly to the master branch. We rarely coded on the same module at the same time so conflicts were surprisingly rare. However, we did not have a systematic code review process. While this saved us time in the short run, it meant that team members did not have much of a chance to learn about the code that the other team members were writing. The team became overly specialized; many of the modules in the OS were well-understood by only one team member. A more systematic review process may have helped keep all members on the team well-grounded on all aspects of the OS.\\
+
+\section{Team Dynamics and Scheduling}
+
+There were no major conflicts between any of the team members, which proved beneficial for all of us.\\
+
+We did not have a systematic process for allocation and scheduling of tasks. Usually a release cycle would begin as a free-for-all with members choosing parts they wanted to work on. Later on in the cycle, an allocation system would be determined, but it was informal, frequently did not go according to plan, and rarely carried any concrete deadlines for individual group members.\\
+
+With P1 and P2 in particular, we encountered time trouble and needed to use a late day for each. We could have avoided this problem by allocating responsibilities more precisely and maintaining deadlines for the main milestones.\\
 
 \chapter{Timing and Analysis}
 
-\textcolor{red}{\textbf{This still needs to be programmed}} \\
+\textcolor{red}{\textbf{Peter}} \\
 
+In order to do timing, a second timer (called "timer 1") was programmed. Whereas timer0 interrupted once every millisecond, timer1 never interrupts and never does anything other than maintain a count. Like timer0, timer1 operated at a speed of 100MHz.\\
+
+The timer test code was added to the user test processes, with the tests conducted in {\tt proc5()} after all the regular tests had been completed. The three primitives that had their time measured were {\tt k\_request\_memory\_block()}, {\tt k\_send\_message()}, and {\tt k\_receive\_message()}. The test was designed so that there would be no blocking or pre-emption during any of these calls. Each of these functions was called ten times inside a loop and the elapsed time was measured using the timer's {\tt TC} register. By writing certain values to the timer's {\tt TCR} register, we were able to programmatically start, stop, and reset the timer during and between tests.\\
+
+The raw data proved to be very consistent and exhibited zero variance in 24 total runs. Since the timer ticked at 100MHz, it meant that each clock tick represented 10ns in time. Since each time value was obtained on a sample of 10 calls made consecutively, we divide by 10 to get the time elapsed per individual call. Here is the data, represented as ns per call.\\
+
+\begin{figure}[H]
+
+\begin{tabular}{| c | c | c | c | }
+    \hline
+     & {\tt k\_request\_memory\_block} & {\tt k\_send\_message} & {\tt k\_receive\_message}\\
+    \hline
+    Time (ns) & 420 & 1028 & 866\\
+    \hline
+\end{tabular}
+
+\caption{Timing Test Results}
+
+\end{figure}
+
+Judging by the high consistency of the results, the hardware always executed the code in the same predictable manner without any optimizations or stalls.\\
+
+The primitives for message-handling are more expensive than the primitive for memory. This difference is likely due to the fact that the message primitives work with the {\tt message} object type, which is larger and more complex than the {\tt heap\_blk} object type used to manage heap blocks.\\
 
 \end{document}
