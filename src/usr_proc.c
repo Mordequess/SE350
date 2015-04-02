@@ -377,7 +377,7 @@ void proc5(void){
 	message = request_memory_block();
 	message->mtype = DEFAULT;
 	message->mtext[0] = 'S';
-	delayed_send(5, message, 5);
+	delayed_send(5, message, 50);
 	message = receive_message(&sender_id);
 
 	add_to_order(5);
@@ -413,7 +413,9 @@ void proc5(void){
 	LPC_TIM1->TCR = TIMER_STOP;
 	elapsed_time = LPC_TIM1->TC;
 	
-	printf("10 requests took %d time\n\r", elapsed_time);
+	uart0_put_string("10 requests took ");
+	print_number(elapsed_time);
+	uart0_put_string(" time\n\r");
 	
 	LPC_TIM1->TCR = TIMER_RESET;
   LPC_TIM1->TCR = TIMER_START;
@@ -423,17 +425,21 @@ void proc5(void){
 	LPC_TIM1->TCR = TIMER_STOP;
 	elapsed_time = LPC_TIM1->TC;
 	
-	printf("10 sends took %d time\n\r", elapsed_time);
+	uart0_put_string("10 sends took ");
+	print_number(elapsed_time);
+	uart0_put_string(" time\n\r");
 	
 	LPC_TIM1->TCR = TIMER_RESET;
   LPC_TIM1->TCR = TIMER_START;
 	for (i = 0; i < 10; i++) {
-		receive_message(NULL);
+		receive_message(&sender_id);
 	}
 	LPC_TIM1->TCR = TIMER_STOP;
 	elapsed_time = LPC_TIM1->TC;
 	
-	printf("10 receives took %d time\n\r", elapsed_time);
+	uart0_put_string("10 receives took ");
+	print_number(elapsed_time);
+	uart0_put_string(" time\n\r");
 	
 	//Timing tests are over. Release the blocks.
 	for (i = 0; i < 10; i++) {

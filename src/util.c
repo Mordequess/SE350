@@ -14,6 +14,12 @@ void assert(int expression, unsigned char * message) {
 	
 }
 
+void print_number(int number) {
+	int digit = number % 10;
+	if (number != 0) print_number(number/10);
+	uart0_put_char('0'+ digit);
+}
+
 void copy_string(char source[], char destination[]) {
 	int i = 0;
     
