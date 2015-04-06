@@ -78,7 +78,7 @@ int k_request_memory_block(void);
 \end{lstlisting}
 \end{minipage}
 
-First, the procedure checks if all memory blocks in the system heap have been reservd already. If so, this process becomes blocked and will be unblocked once another process releases one of the memory blocks. \\
+First, the procedure checks if all memory blocks in the system heap have been reserved already. If so, this process becomes blocked and will be unblocked once another process releases one of the memory blocks. \\
 Once a memory block is free the procedure iterates through the free space nodes like a linked list, searching for the first chunk of free space that is large enough to satisfy the request. Then the procedure passes a pointer to the first address of the block to the process and updates the heap to account for this space being reserved. \\
 
 \begin{algorithm}
@@ -146,7 +146,7 @@ By using generic methods that use pointers of pointers as parameters, the same f
 void enqueue(pcb** targetQueue, pcb* element);
 pcb* dequeue(pcb** targetQueue);
 void remove_queue_node(pcb** targetQueue, pcb* element);
-U32 is_empty(pcb* targetQueue)
+U32 is_empty(pcb* targetQueue);
 \end{lstlisting}
 \end{minipage}
 The {\tt enqueue} method compares the priorities of each process in the queue and inserts the element beneath all processes of equal value, ensuring FIFO ordering.\\
@@ -192,7 +192,7 @@ int k_set_process_priority(int process_id, int priority);
 \end{lstlisting}
 \end{minipage}
 
-Process priority changing is all done through this method. After checking that the process is allowed to have it's priority change and the priority it is being set to is legal, the priority value is set and the process is removed and re-enqueued to the queue matching the process's current state. The processor is then released to allow for higher priority processes to take over.
+Process priority changing is all done through this method. After checking that the process is allowed to have its priority changed and the priority it is being set to is legal, the priority value is set and the process is removed and re-enqueued to the queue matching the process's current state. The processor is then released to allow for higher priority processes to take over.
 
 \begin{algorithm}
   \caption{The process priority changing function}
@@ -203,8 +203,8 @@ Process priority changing is all done through this method. After checking that t
 		\EndIf
 		\State {set processID's priority to targetPriority}
 		\State {determine state}
-		\State {remove queue node}
-		\State {enqueue processID's PCB}
+		\State {remove queue node from its current queue}
+		\State {enqueue processID's PCB into the correct queue}
     \EndProcedure
   \end{algorithmic}
 \end{algorithm}
@@ -227,9 +227,9 @@ int k_send_message(int process_id, void* message_envelope);
 \end{lstlisting}
 \end{minipage}
 
-Message passing is implemented using a stucture very similar to the process queues. Processes can call this method after creating a typical {\tt message_envelope} containing a message type and a char array of the message's contents. The function call also requires a destination process that will receive this message. {\tt k\_send\_message} is the kernel primitive used to facilitate message sending.\\
+Message passing is implemented using a queue stucture very similar to the process queues. Processes can call this method after creating a typical {\tt message_envelope} containing a message type and a char array of the message's contents. The function call also requires a destination process that will receive this message. {\tt k\_send\_message} is the kernel primitive used to facilitate message sending.\\
 
-The procedure begins by using {\tt message\_new} to create a {\tt message}, our kernel level wrapper for the {\tt message_envelope} containing additional necessary information such as the sender process's ID and the pointer necessary for message queue construction. The {\tt message} is then enqueued on the message queue of the destination process. If the destination process is blocked on receive, we unblock and switch, releasing the processor to determine which process should be running next. \\
+The procedure begins by using {\tt message\_new} to create a {\tt message}, our kernel level wrapper for the {\tt message_envelope} containing additional necessary information such as the sender process's ID and the pointer necessary for message queue construction. The {\tt message} is then enqueued on the message queue of the destination process. If the destination process is {\tt BLOCKED\_ON\_RECEIVE}, we unblock and switch, releasing the processor to determine which process should be running next. \\
 
 \begin{algorithm}
   \caption{The send message function}
@@ -239,7 +239,7 @@ The procedure begins by using {\tt message\_new} to create a {\tt message}, our 
 		\State {enqueue m on the destination process's message queue}
       
 		\If{destination process is waiting for a message}
-			\State {move destination process to Ready state}
+			\State {move destination process to READY state}
 			\State {pre-empt the processor, switching to the waiting process}
 		\EndIf
 		\State {return RTX_OK}
@@ -256,9 +256,9 @@ int k_receive_message(int* sender_id);
 \end{lstlisting}
 \end{minipage}
 
-Each process maintains it's own message queue in the PCB. {\tt k\_receive\_message} is the kernel primitive used to facilitate message receiving. When a process tries to receive a message, first the procedure checks if the message queue is empty. If so, this process becomes blocked on receive and will become unblocked by the send_message procedure. \\
+Each process maintains its own message queue in the PCB. {\tt k\_receive\_message} is the kernel primitive used to facilitate message receiving. When a process tries to receive a message, first the procedure checks if the message queue is empty. If so, this process becomes {\tt BLOCKED\_ON\_RECEIVE} and will become unblocked by the {\tt send\_message} procedure. \\
 
-Once a message is in the queue, the procedure dequeues the first message and returns the message envelope data containing the message type and contents. The sender_id pointer parameter is set as the sender_id from the {\tt message} wrapper for the process to cross reference and confirm this is the message it was waiting for. \\
+Once a message is in the queue, the procedure dequeues the first message and returns the message envelope data containing the message type and contents. The {\tt sender\_id} pointer parameter is set as the {\tt sender\_id} from the {\tt message} wrapper for the process to cross reference and confirm this is the message it was waiting for. \\
 
 \begin{algorithm}
   \caption{The receive message function}
@@ -295,7 +295,7 @@ The procedure begins by verifying its parameters, returning {\tt RTX_ERR} if any
       \If{delay is negative}
 			\State {return RTX_ERR}
 		\EndIf
-		\If{No process has id processID}
+		\If{no process has id processID}
 			\State {return RTX_ERR}
 		\EndIf
 		\State {m = create message object with expiry time of now + delay}
