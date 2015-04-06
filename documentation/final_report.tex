@@ -13,6 +13,7 @@
     tikz,
     tabularx,
     float,
+    graphicx,
 	 color
 }
 
@@ -94,6 +95,8 @@ The `heap' that the processes request memory blocks from is maintained as a link
 Free space nodes keep track of the length of free space following this address and a pointer to the next chunk of unclaimed blocks. These headers are written directly into the blocks as they are returned to the heap. They are free to be overwritten, the only safe header is the starting address of the heap. The heap is shifted by four bytes to protect the last block from ever being overwritten. \\
 
 The request and release methods maintain the optimal structure of the list, deleting and overwriting excess or useless nodes.\\
+
+\includegraphics{memory.png}
 
 
 \subsection{Requesting Memory Blocks}
@@ -625,9 +628,12 @@ from the ready queue and execution begins.
 
 \textcolor{red}{\textbf{Tyler}} \\
 We used the user processes to test the functionality of our system. We implemented a dynamic test polling system, where the user processes updated a list of execution ordering as they switched between each other.\\
+
 This list is constantly compared with a preset expected execution order, and discrepencies cause the TEST_PASSED flag to flip. Since the texts printed in order, it became easier to identify at what point in the test execution the unexpected behaviour occurred.\\
 
-Towards the end of the project, we implemented a second system timer to observe how long executions would take to execute. This allowed us to investigate inefficiencies and determine where our code base could be improved.\\
+At each stage of development we used the user processes to test the limits of the system. Extensive memory block requesting, message passing, and priority switching stressed our data structures, revealing critical design flaws and bugs that would have otherwise gone overlooked. \\
+
+Towards the end of the project, we implemented the second system timer to observe how long executions would take to execute. This allowed us to investigate inefficiencies and determine where our code base could be improved.\\
 
 \chapter{Major Design Changes}
 
