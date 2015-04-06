@@ -16,5 +16,13 @@
 *.tbabaran
 *.Tyler
 *.kelly
+*.swo
+*.swp
+documentation/*.log
+documentation/*.loa
+documentation/*.lof
+documentation/*.out
+documentation/*.toc
+documentation/*.aux
 *.ke2mcbri
 *.uvopt

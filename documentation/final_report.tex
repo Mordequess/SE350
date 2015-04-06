@@ -30,8 +30,8 @@
     \texttt{tbabaran@uwaterloo.ca}
     \and
     Kelly McBride\\
-		insert student number here\\
-    \texttt{EMAIL@waterloo.ca}
+		20479819\\
+    \texttt{ke2mcbri@waterloo.ca}
     \and
     Peter Socha\\
 		20484453\\
@@ -134,7 +134,13 @@ Releasing memory blocks requires a pointer to a memory block. The procedure focu
 
 \subsection{Process Control Structures}
 
-\textcolor{red}{\textbf{Kelly}} \\
+% \textcolor{red}{\textbf{Kelly}} \\
+The Process Control Block (PCB) is the primary process control structure. It
+contains the \texttt{m_pid}, \texttt{m_priority}, and \texttt{m_state} as integers, and 
+\texttt{mp_sp}, the process' stack pointer, \texttt{mp_next}, a PCB pointer used for our
+process queues, and \texttt{m_queue}, the pointer to that process' message queue.
+This is all of the information necessary for context switching from one process
+to the next. Users cannot view nor modify any process' PCB directly.
 
 \subsection{Process Queues}
 
@@ -158,6 +164,12 @@ The {\tt remove_queue_node} procedure is used when processes change priority and
 
 
 \textcolor{red}{\textbf{Kelly}} \\
+The scheduler is pre-emptive on I/O and Inter-Process Communication.
+The scheduling algorithm itself is very simple: take a process from the ready queue
+unless the only remaining process in the ready queue is the Null process. The wit of 
+this simple scheduler relies on our enqueueing and dequeuing functions to preserve
+the ordering of processes. This scheduler does not use a time quantum nor pre-emption
+on a time quantum.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,6 +228,22 @@ Process priority changing is all done through this method. After checking that t
 \subsection{Message Structure}
 
 \textcolor{red}{\textbf{Kelly}} \\
+There are two structures used for message passing in the RTX, \texttt{msgbuf} and
+\texttt{message}. \\
+The \texttt{msgbuf} structure is the general structure that both users and the
+kernel know about. It is typically placed at the start of an allocated memory block
+and contains integer \texttt{mtype} which describes the purpose of the message, be it
+\texttt{KCD_REG} to register a new command type, or \texttt{DEFAULT} for a general
+message, or any other of the defined types. The only other member of the \texttt{msgbuf}
+structure is then \texttt{mbody}, a \texttt{char} array of size 10 to contain the 
+message contents. \\
+The \texttt{message} structure is used only by the kernel and contains \texttt{message_envelope},
+a pointer to the \texttt{msgbuf} within the allocated memory block, integers for the
+\texttt{sender_id}, \texttt{destination_id}, \texttt{expiry_time}, and a pointer 
+to another message structure \texttt{mp_next} for use in the message queues. \\
+Typically the \texttt{msgbuf} structure is allocated at the start of a memory block,
+and the \texttt{message} structure is allocated in the space right after, still before
+the 64-byte mark.
 
 
 \subsection{Sending Messages}
