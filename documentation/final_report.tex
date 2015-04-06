@@ -623,7 +623,10 @@ from the ready queue and execution begins.
 \section{Testing}
 
 \textcolor{red}{\textbf{Tyler}} \\
+We used the user processes to test the functionality of our system. We implemented a dynamic test polling system, where the user processes updated a list of execution ordering as they switched between each other.\\
+This list is constantly compared with a preset expected execution order, and discrepencies cause the TEST_PASSED flag to flip. Since the texts printed in order, it became easier to identify at what point in the test execution the unexpected behaviour occurred.\\
 
+Towards the end of the project, we implemented a second system timer to observe how long executions would take to execute. This allowed us to investigate inefficiencies and determine where our code base could be improved.\\
 
 \chapter{Major Design Changes}
 
@@ -632,6 +635,11 @@ from the ready queue and execution begins.
 \section{Structure of Process Queue}
 
 \textcolor{red}{\textbf{Tyler}} \\
+By the end of P1 we had the blocked and ready queue each use a separate set of queueing functions. The introduction of the \"blocked on receive\" queues forced us to rework the queueing methods to operate generically, passing a reference to the queue head along with each function call.\\
+This cleaned and simplified a large section of the code base, greatly reducing our repeated code.\\
+
+\section{Heap Faults}
+Through stress tests we encountered a unique edge case in our memory heap assignment. The order that the KCD and Wall Clock requested blocks lead us to a chain of memory leaks that would have otherwise gone unnoticed. These leaks were caused by incorrectly calculating the shift required to protect the head heap node, causing it to be overwritten and the entire heap structure would be lost.
 
 
 
