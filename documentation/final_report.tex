@@ -50,6 +50,11 @@
 \chapter{Introduction}
 
 \textcolor{red}{\textbf{Kelly}} \\
+
+This report is a design document outlining the RTX operating system written by Tyler Babaran, Kelly McBride, and Peter Socha as part of the SE 350 course at the University of Waterloo. The OS is written for an MCB1700 board with an LPC1768 microcontroller.\\
+
+The purpose of this report is to provide documentation on the operating system. It will outline the kernel API available to anyone programming processes for the OS. The provided system and user processes are described in detail. Information on initialization and interrupts it also included. Finally, there is a section describing the time performance of the some of the key kernel primitives.\\
+
 The ruling concept of the RTX detailed here is simplicity. Some of the methods used
 to achieve `simplicity' are unconventional, but the idea of simplicity still holds
 true. The priority queues are implemented as sorted linked lists where high priority
@@ -186,12 +191,8 @@ The {\tt remove_queue_node} procedure is used when processes change priority and
 
 
 \textcolor{red}{\textbf{Kelly}} \\
-The scheduler is pre-emptive on I/O and Inter-Process Communication.
-The scheduling algorithm itself is very simple: take a process from the ready queue
-unless the only remaining process in the ready queue is the Null process. The wit of 
-this simple scheduler relies on our enqueueing and dequeuing functions to preserve
-the ordering of processes. This scheduler does not use a time quantum nor pre-emption
-on a time quantum.
+The scheduler is pre-emptive on I/O and inter-process communication.
+The scheduling algorithm itself is very simple: take the process from the top of the ready queue. The ready queue is sorted based on priority and then by order of arrival. The null process is always the last process on the ready queue and it is chosen when there are no ready processes. The enqueuing and dequeueing procedures ensure that the processes are at the correct location, keeping both priority and order in mind. This scheduler does not use a time quantum nor pre-emption on a time quantum.\\
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
