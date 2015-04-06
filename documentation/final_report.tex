@@ -50,8 +50,6 @@
 
 \chapter{Introduction}
 
-\textcolor{red}{\textbf{Kelly}} \\
-
 This report is a design document outlining the RTX operating system written by Tyler Babaran, Kelly McBride, and Peter Socha as part of the SE 350 course at the University of Waterloo. The OS is written for an MCB1700 board with an LPC1768 microcontroller.\\
 
 The purpose of this report is to provide documentation on the operating system. It will outline the kernel API available to anyone programming processes for the OS. The provided system and user processes are described in detail. Information on initialization and interrupts it also included. Finally, there is a section describing the time performance of the some of the key kernel primitives.\\
@@ -68,7 +66,6 @@ functions, every part functions together as a whole in a simple and expected way
 
 \section{Global Variables and Structures}
 
-\textcolor{red}{\textbf{Kelly}} \\
 The global variables are structures used in the RTX are primarily for initialization, though
 some are core to its functionality.
 \begin{itemize}
@@ -103,7 +100,6 @@ There are also some global variables used only for the i-processes.
 
 \subsection{Memory Structure}
 
-\textcolor{red}{\textbf{Tyler}} \\
 The `heap' that the processes request memory blocks from is maintained as a linked list. The length of the heap is exactly enough space for thirty memory blocks of size 0x80 (128 bytes).\\
 
 Free space nodes keep track of the length of free space following this address and a pointer to the next chunk of unclaimed blocks. These headers are written directly into the blocks as they are returned to the heap. They are free to be overwritten, the only safe header is the starting address of the heap. The heap is shifted by four bytes to protect the last block from ever being overwritten. \\
@@ -118,7 +114,6 @@ The request and release methods maintain the optimal structure of the list, dele
 
 \subsection{Requesting Memory Blocks}
 
-\textcolor{red}{\textbf{Tyler}} \\
 \begin{minipage}{\textwidth}
 \begin{lstlisting}[language=C, frame=single]
 int k_request_memory_block(void);
@@ -143,7 +138,6 @@ Once a memory block is free the procedure iterates through the free space nodes 
 
 \subsection{Releasing Memory Blocks}
 
-\textcolor{red}{\textbf{Tyler}} \\
 \begin{minipage}{\textwidth}
 \begin{lstlisting}[language=C, frame=single]
 int k_release_memory_block(void* memory_block);
@@ -182,7 +176,6 @@ Releasing memory blocks requires a pointer to a memory block. The procedure focu
 
 \subsection{Process Control Structures}
 
-\textcolor{red}{\textbf{Kelly}} \\
 The Process Control Block (PCB) is the primary process control structure. It
 contains the \texttt{m_pid}, \texttt{m_priority}, and \texttt{m_state} as integers, and 
 \texttt{mp_sp}, the process' stack pointer, \texttt{mp_next}, a PCB pointer used for our
@@ -192,7 +185,6 @@ to the next. Users cannot view nor modify any process' PCB directly.
 
 \subsection{Process Queues}
 
-\textcolor{red}{\textbf{Tyler}} \\
 The process queues are implemented to use one queue for all priorities, instead of a separate queue for each priority. Each {\tt PCB} contains a {\tt PCB} pointer, allowing the {\tt PCB}s themselves to be the queue nodes. \\
 By using generic methods that use pointers of pointers as parameters, the same four methods are used for all process queues: \\
 \begin{minipage}{\textwidth}
@@ -210,8 +202,6 @@ The {\tt remove_queue_node} procedure is used when processes change priority and
 
 \subsection{Process Scheduling}
 
-
-\textcolor{red}{\textbf{Kelly}} \\
 The scheduler is pre-emptive on I/O and inter-process communication.
 The scheduling algorithm itself is very simple: take the process from the top of the ready queue. The ready queue is sorted based on priority and then by order of arrival. The null process is always the last process on the ready queue and it is chosen when there are no ready processes. The enqueuing and dequeueing procedures ensure that the processes are at the correct location, keeping both priority and order in mind. This scheduler does not use a time quantum nor pre-emption on a time quantum.\\
 
@@ -221,8 +211,6 @@ The scheduling algorithm itself is very simple: take the process from the top of
 \section{Process Priority Management}
 
 \subsection{Get Process Priority}
-
-\textcolor{red}{\textbf{Peter}} \\
 
 \begin{minipage}{\textwidth}
 \begin{lstlisting}[language=C, frame=single]
@@ -241,7 +229,6 @@ The {\tt k\_get\_process\_priority} primitive is used to get the priority of a p
 
 \subsection{Set Process Priority}
 
-\textcolor{red}{\textbf{Tyler}} \\
 \begin{minipage}{\textwidth}
 \begin{lstlisting}[language=C, frame=single]
 int k_set_process_priority(int process_id, int priority);
@@ -273,7 +260,6 @@ Process priority changing is all done through this method. After checking that t
 
 \subsection{Message Structure}
 
-\textcolor{red}{\textbf{Kelly}} \\
 There are two structures used for message passing in the RTX, \texttt{msgbuf} and
 \texttt{message}. \\
 \begin{lstlisting}[language=C, frame=single]
@@ -309,7 +295,6 @@ the 64-byte mark.
 
 \subsection{Sending Messages}
 
-\textcolor{red}{\textbf{Tyler}} \\
 \begin{minipage}{\textwidth}
 \begin{lstlisting}[language=C, frame=single]
 int k_send_message(int process_id, void* message_envelope);
@@ -338,7 +323,6 @@ The procedure begins by using {\tt message\_new} to create a {\tt message}, our 
 
 \subsection{Receiving Messages}
 
-\textcolor{red}{\textbf{Tyler}} \\
 \begin{minipage}{\textwidth}
 \begin{lstlisting}[language=C, frame=single]
 int k_receive_message(int* sender_id);
@@ -364,8 +348,6 @@ Once a message is in the queue, the procedure dequeues the first message and ret
 \end{algorithm}
 
 \subsection{Delayed Send}
-
-\textcolor{red}{\textbf{Peter}} \\
 
 \begin{minipage}{\textwidth}
 \begin{lstlisting}[language=C, frame=single]
@@ -399,8 +381,6 @@ The procedure begins by verifying its parameters, returning {\tt RTX_ERR} if any
 \section{Interrupts and I-Processes}
 
 \subsection{UART I-Process}
-
-\textcolor{red}{\textbf{Peter}} \\
 
 The UART i-process has two functions:
 
@@ -467,8 +447,6 @@ When the {\tt \_DEBUG\_HOTKEYS} flag is enabled, a set of characters has special
 
 \subsection{Timer I-Process}
 
-\textcolor{red}{\textbf{Peter}} \\
-
 The timer i-process is called by the timer interrupt handler, which runs 1000 times each second. The purpose of the iprocess is to send delayed messages and to update the global timer count {\tt g\_timer\_count}.\\
 
 The timer i-process treats its message queue differently than the other processes in the RTX. Instead of popping messages off of its queue one at a time, it scans the entire queue each time it runs. The expiry time of each message is compared with the current time and the message is sent to the destination process if the expiry time has passed. A special non-preemptive message-sending procedure is used so that the i-process is not pre-empted before it has finished scanning the queue. This non-preemptive sender places the receiving process on the ready queue but does not run it. Instead, a flag variable {\tt g\_timer\_flag} is set that will cause {\tt k\_release\_processor()} to run when the i-process is finished (this call is not made in the process, but in the assembly wrapper that handles the interrupt).\\
@@ -501,8 +479,6 @@ The timer i-process does not use {\tt receive\_message()} to read its queue and 
 
 \subsection{Null Process}
 
-\textcolor{red}{\textbf{Peter}} \\
-
 The null process has the lowest priority of any process in the operating system. It runs only when there are no ready processes to be run. When it runs, all it does is invoke {\tt k\_release\_processor()} so that the kernel can check if there is a ready process to be run.
 
 \begin{algorithm}
@@ -517,8 +493,6 @@ The null process has the lowest priority of any process in the operating system.
 \end{algorithm}
 
 \subsection{KCD Process}
-
-\textcolor{red}{\textbf{Peter}}
 
 The Keyboard Command Decoder process exists so that users can send console commands to the system at runtime. A command can be registered by sending the KCD process a {\tt KCD\_REG} type message. The KCD maintains a list of registered commands inside an array. When a {\tt DEFAULT} command is sent to the KCD, the KCD will try to recognize the command. If the command is found, the KCD will send a message to the process that registered the command; the message will have the {\tt KCD_DISPATCH} type. In both cases, the contents of the command are stored inside the message's {\tt mtext}. The KCD process is an intermediary between the UART i-process (which registers the keystrokes) and the eventual receiving message (which executes the command).\\
 
@@ -548,8 +522,6 @@ The KCD process assumes that command strings contain no whitespace. It assumes t
 
 \subsection{CRT Process}
 
-\textcolor{red}{\textbf{Peter}} \\
-
 The CRT process is used to print text to the system console. The process waits for messages of type {\tt CRT\_DISP}. If it receives such a message, it will send it to the UART i-process and modify the {\tt IER} register so that the UART treats the message as an output message. The UART is interrupted and therefore the UART i-process will start to run immediately.\\
 
 \begin{algorithm}
@@ -575,8 +547,6 @@ The CRT process is used to print text to the system console. The process waits f
 
 \subsection{Wall Clock Process}
 
-\textcolor{red}{\textbf{Peter}} \\
-
 The wall clock process is used to display the time in 24-hour format. If the clock is on, it will print the time on the screen each second by sending messages to the CRT process. The process maintains second-by-second timing by sending itself delayed messages with a delay of 1000 milliseconds.\\
 
 The wall clock process registers three commands with the KCD when it initializes. By typing commands into the console, the user can control the wall clock's behaviour. When the process launches, the wall clock starts as inactive.\\
@@ -592,8 +562,6 @@ The wall clock process registers three commands with the KCD when it initializes
 The wall clock process relies on memory blocks to send display messages to the CRT process and to send itself delayed messages to re-awaken itself. If system memory has been depleted, it will be unable to properly funcion.\\
 
 \subsection{Set Priority Process}
-
-\textcolor{red}{\textbf{Peter}} \\
 
 \begin{minipage}{\textwidth}
 \begin{lstlisting}[language=C, frame=single]
@@ -626,8 +594,6 @@ The priority change takes effect immediately. If the user enters invalid paramet
 
 \subsection{Stress Test Processes}
 
-\textcolor{red}{\textbf{Peter}} \\
-
 The stress test processes are a collection of three user processes called A, B, and C. The three of them are used to test how the system copes with the depletion of heap blocks in memory.\\
 
 Process A waits until it receives a {\tt \%Z} command, after which it will repeatedly request memory, make messages, and send those messages to Process B.\\
@@ -639,8 +605,6 @@ Process C receives messages from Process B. Every 20th message, it prints \"Proc
 In general, Process A requests memory blocks and Process C ends up releasing them. If Process C's priority is too low, memory blocks may end up never being released and we may end up in deadlock.\\
 
 \section{Initialization}
-
-\textcolor{red}{\textbf{Kelly}} \\
 
 Process Initialization is comprised of four parts:
 \begin{itemize}
@@ -661,7 +625,6 @@ from the ready queue and execution begins.
 
 \section{Testing}
 
-\textcolor{red}{\textbf{Tyler}} \\
 We used the user processes to test the functionality of our system. We implemented a dynamic test polling system, where the user processes updated a list of execution ordering as they switched between each other.\\
 
 This list is constantly compared with a preset expected execution order, and discrepencies cause the TEST_PASSED flag to flip. Since the texts printed in order, it became easier to identify at what point in the test execution the unexpected behaviour occurred.\\
@@ -672,11 +635,9 @@ Towards the end of the project, we implemented the second system timer to observ
 
 \chapter{Major Design Changes}
 
-\textcolor{red}{\textbf{Add more sections as appropriate}} \\
 
 \section{Structure of Process Queue}
 
-\textcolor{red}{\textbf{Tyler}} \\
 By the end of P1 we had the blocked and ready queue each use a separate set of queueing functions. The introduction of the \"blocked on receive\" queues forced us to rework the queueing methods to operate generically, passing a reference to the queue head along with each function call.\\
 This cleaned and simplified a large section of the code base, greatly reducing our repeated code.\\
 
@@ -687,8 +648,6 @@ Through stress tests we encountered a unique edge case in our memory heap assign
 
 
 \chapter{Lessons Learned}
-
-\textcolor{red}{\textbf{Everyone contribute something}} \\
 
 \section{Source Control and Code Management}
 
@@ -705,8 +664,6 @@ We did not have a systematic process for allocation and scheduling of tasks. Usu
 With P1 and P2 in particular, we encountered time trouble and needed to use a late day for each. We could have avoided this problem by allocating responsibilities more precisely and maintaining deadlines for the main milestones.\\
 
 \chapter{Timing and Analysis}
-
-\textcolor{red}{\textbf{Peter}} \\
 
 In order to do timing, a second timer (called \"timer 1\") was programmed. Whereas timer0 interrupted once every millisecond, timer1 never interrupts and never does anything other than maintain a count. Like timer0, timer1 operated at a speed of 100MHz.\\
 

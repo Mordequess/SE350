@@ -24,5 +24,6 @@ documentation/*.lof
 documentation/*.out
 documentation/*.toc
 documentation/*.aux
+documentation/*.pdf
 *.ke2mcbri
 *.uvopt
