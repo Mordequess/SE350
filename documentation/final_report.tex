@@ -13,6 +13,7 @@
     tikz,
     tabularx,
     float,
+    graphicx,
 	 color
 }
 
@@ -50,6 +51,11 @@
 \chapter{Introduction}
 
 \textcolor{red}{\textbf{Kelly}} \\
+
+This report is a design document outlining the RTX operating system written by Tyler Babaran, Kelly McBride, and Peter Socha as part of the SE 350 course at the University of Waterloo. The OS is written for an MCB1700 board with an LPC1768 microcontroller.\\
+
+The purpose of this report is to provide documentation on the operating system. It will outline the kernel API available to anyone programming processes for the OS. The provided system and user processes are described in detail. Information on initialization and interrupts it also included. Finally, there is a section describing the time performance of the some of the key kernel primitives.\\
+
 The ruling concept of the RTX detailed here is simplicity. Some of the methods used
 to achieve `simplicity' are unconventional, but the idea of simplicity still holds
 true. The priority queues are implemented as sorted linked lists where high priority
@@ -103,6 +109,8 @@ The `heap' that the processes request memory blocks from is maintained as a link
 Free space nodes keep track of the length of free space following this address and a pointer to the next chunk of unclaimed blocks. These headers are written directly into the blocks as they are returned to the heap. They are free to be overwritten, the only safe header is the starting address of the heap. The heap is shifted by four bytes to protect the last block from ever being overwritten. \\
 
 The request and release methods maintain the optimal structure of the list, deleting and overwriting excess or useless nodes.\\
+
+\includegraphics{memory.png}
 
 
 \subsection{Requesting Memory Blocks}
@@ -201,12 +209,8 @@ The {\tt remove_queue_node} procedure is used when processes change priority and
 
 
 \textcolor{red}{\textbf{Kelly}} \\
-The scheduler is pre-emptive on I/O and Inter-Process Communication.
-The scheduling algorithm itself is very simple: take a process from the ready queue
-unless the only remaining process in the ready queue is the Null process. The wit of 
-this simple scheduler relies on our enqueueing and dequeuing functions to preserve
-the ordering of processes. This scheduler does not use a time quantum nor pre-emption
-on a time quantum.
+The scheduler is pre-emptive on I/O and inter-process communication.
+The scheduling algorithm itself is very simple: take the process from the top of the ready queue. The ready queue is sorted based on priority and then by order of arrival. The null process is always the last process on the ready queue and it is chosen when there are no ready processes. The enqueuing and dequeueing procedures ensure that the processes are at the correct location, keeping both priority and order in mind. This scheduler does not use a time quantum nor pre-emption on a time quantum.\\
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -655,7 +659,13 @@ from the ready queue and execution begins.
 \section{Testing}
 
 \textcolor{red}{\textbf{Tyler}} \\
+We used the user processes to test the functionality of our system. We implemented a dynamic test polling system, where the user processes updated a list of execution ordering as they switched between each other.\\
 
+This list is constantly compared with a preset expected execution order, and discrepencies cause the TEST_PASSED flag to flip. Since the texts printed in order, it became easier to identify at what point in the test execution the unexpected behaviour occurred.\\
+
+At each stage of development we used the user processes to test the limits of the system. Extensive memory block requesting, message passing, and priority switching stressed our data structures, revealing critical design flaws and bugs that would have otherwise gone overlooked. \\
+
+Towards the end of the project, we implemented the second system timer to observe how long executions would take to execute. This allowed us to investigate inefficiencies and determine where our code base could be improved.\\
 
 \chapter{Major Design Changes}
 
@@ -664,6 +674,11 @@ from the ready queue and execution begins.
 \section{Structure of Process Queue}
 
 \textcolor{red}{\textbf{Tyler}} \\
+By the end of P1 we had the blocked and ready queue each use a separate set of queueing functions. The introduction of the \"blocked on receive\" queues forced us to rework the queueing methods to operate generically, passing a reference to the queue head along with each function call.\\
+This cleaned and simplified a large section of the code base, greatly reducing our repeated code.\\
+
+\section{Heap Faults}
+Through stress tests we encountered a unique edge case in our memory heap assignment. The order that the KCD and Wall Clock requested blocks lead us to a chain of memory leaks that would have otherwise gone unnoticed. These leaks were caused by incorrectly calculating the shift required to protect the head heap node, causing it to be overwritten and the entire heap structure would be lost.
 
 
 
