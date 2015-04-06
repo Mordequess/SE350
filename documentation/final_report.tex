@@ -66,18 +66,32 @@ functions, every part functions together as a whole in a simple and expected way
 The global variables are structures used in the RTX are primarily for initialization, though
 some are core to its functionality.
 \begin{itemize}
-	\item \texttt{gp_stack}: points to the last allocated stack address, used when allocating process stacks
-	\item \texttt{g_test_procs}: an array of \texttt{PROC_INIT} structs, used for initializing user processes
-	\item \texttt{g_proc_table}: an array of \texttt{PROC_INIT} structs, containing both system and user processes for initialization
-	\item \texttt{gp_pcbs}: the array containing the PCB for every process, used during context switches constantly
-	\item \texttt{gp_current_process}: a pointer to the current process' PCB, also used constantly
-	\item Process Queues: \texttt{g_ready_queue, g_blocked_on_memory_queue, g_blocked_on_receive_queue},
+	\item \texttt{gp\_stack}: points to the last allocated stack address, used when allocating process stacks
+	\item \texttt{g\_test\_procs}: an array of \texttt{PROC\_INIT} structs, used for initializing user processes
+	\item \texttt{g\_proc\_table}: an array of \texttt{PROC\_INIT} structs, containing both system and user processes for initialization
+	\item \texttt{gp\_pcbs}: the array containing the PCB for every process, used during context switches constantly
+	\item \texttt{gp\_current\_process}: a pointer to the current process' PCB, also used constantly
+	\item Process Queues: \texttt{g\_ready\_queue, g\_blocked\_on\_memory\_queue, g_blocked_on_receive_queue},
 		the three process queues are global and used constantly as well, to place each process
 		onto the correct queue based on its outstanding requests and messages.
 \end{itemize}
-In terms of global structures, both \texttt{heap_blk} and \texttt{pcb} are global
-and widely used, \texttt{heap_blk} for allocating memory blocks in the heap, and
+In terms of global structures, both \texttt{heap\_blk} and \texttt{pcb} are global
+and widely used, \texttt{heap\_blk} for allocating memory blocks in the heap, and
 \texttt{pcb} for the process control blocks. Both are detailed further on.
+There are also some global variables used only for the i-processes.
+\begin{itemize}
+	\item \texttt{g\_buffer[]}: a buffer to hold text being output
+	\item \texttt{*gp\_buffer}: a pointer to \texttt{g\_buffer} so that it can be easily modified within a function
+	\item \texttt{g\_char\_in}: a variable to hold one character at a time from the UART
+	\item \texttt{g\_char\_out}: a variable to hold one character at a time for output to the CRT
+	\item \texttt{g\_input\_buffer[BUFFER\_SIZE]}: a character array to hold user input
+	\item \texttt{g\_ouptut\_buffer[BUFFER\_SIZE]}:
+	\item \texttt{g\_input\_buffer\_index}: an integer to iterate through \texttt{g\_input\_buffer}
+	\item \texttt{g\_output\_buffer\_index}: an integer to iterate through \texttt{g\_output\_buffer}
+	\item \texttt{g\_msg\_uart}: a \texttt{msgbuf} the UART i-process uses to process input
+	\item \texttt{g\_timer\_count}: increments with each clock cycle
+	\item \texttt{g\_timer\_flag}: toggles to 1 when a message is sent, and back to 0 when the timer interrupt is fired
+\end{itemize}
 
 \section{Memory Management}
 
@@ -148,6 +162,7 @@ Releasing memory blocks requires a pointer to a memory block. The procedure focu
   \end{algorithmic}
 \end{algorithm}
 
+\pagebreak
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,7 +171,7 @@ Releasing memory blocks requires a pointer to a memory block. The procedure focu
 
 \subsection{Process Control Structures}
 
-% \textcolor{red}{\textbf{Kelly}} \\
+\textcolor{red}{\textbf{Kelly}} \\
 The Process Control Block (PCB) is the primary process control structure. It
 contains the \texttt{m_pid}, \texttt{m_priority}, and \texttt{m_state} as integers, and 
 \texttt{mp_sp}, the process' stack pointer, \texttt{mp_next}, a PCB pointer used for our
@@ -243,6 +258,8 @@ Process priority changing is all done through this method. After checking that t
   \end{algorithmic}
 \end{algorithm}
 
+\pagebreak
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Interprocess Communication}
@@ -252,6 +269,12 @@ Process priority changing is all done through this method. After checking that t
 \textcolor{red}{\textbf{Kelly}} \\
 There are two structures used for message passing in the RTX, \texttt{msgbuf} and
 \texttt{message}. \\
+\begin{lstlisting}[language=C, frame=single]
+typedef struct msgbuf {
+	int mtype; /* user defined message type. One of message constants above  */
+	char mtext[10]; /* body of the message */
+} msgbuf;
+\end{lstlisting}
 The \texttt{msgbuf} structure is the general structure that both users and the
 kernel know about. It is typically placed at the start of an allocated memory block
 and contains integer \texttt{mtype} which describes the purpose of the message, be it
@@ -259,6 +282,15 @@ and contains integer \texttt{mtype} which describes the purpose of the message, 
 message, or any other of the defined types. The only other member of the \texttt{msgbuf}
 structure is then \texttt{mbody}, a \texttt{char} array of size 10 to contain the 
 message contents. \\
+\begin{lstlisting}[language=C, frame=single]
+typedef struct message {
+	msgbuf* message_envelope;
+	int sender_id;
+	int destination_id;
+	int expiry_time;
+	struct message* mp_next;
+} message;
+\end{lstlisting}
 The \texttt{message} structure is used only by the kernel and contains \texttt{message_envelope},
 a pointer to the \texttt{msgbuf} within the allocated memory block, integers for the
 \texttt{sender_id}, \texttt{destination_id}, \texttt{expiry_time}, and a pointer 
