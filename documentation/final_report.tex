@@ -26,8 +26,8 @@
 
 \author{
     Tyler Babaran\\
-		insert student number here\\
-    \texttt{EMAIL@uwaterloo.ca}
+		20457511\\
+    \texttt{tbabaran@uwaterloo.ca}
     \and
     Kelly McBride\\
 		insert student number here\\
@@ -62,16 +62,69 @@
 \subsection{Memory Structure}
 
 \textcolor{red}{\textbf{Tyler}} \\
+The \"heap\" that the processes request memory blocks from is maintained as a linked list. The length of the heap is exactly enough space for thirty memory blocks of size 0x80 (128 bytes).\\
+
+Free space nodes keep track of the length of free space following this address and a pointer to the next chunk of unclaimed blocks. These headers are written directly into the blocks as they are returned to the heap. They are free to be overwritten, the only safe header is the starting address of the heap. The heap is shifted by four bytes to protect the last block from ever being overwritten. \\
+
+The request and release methods maintain the optimal structure of the list, deleting and overwriting excess or useless nodes.\\
+
 
 \subsection{Requesting Memory Blocks}
 
 \textcolor{red}{\textbf{Tyler}} \\
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+int k_request_memory_block(void);
+\end{lstlisting}
+\end{minipage}
+
+First, the procedure checks if all memory blocks in the system heap have been reservd already. If so, this process becomes blocked and will be unblocked once another process releases one of the memory blocks. \\
+Once a memory block is free the procedure iterates through the free space nodes like a linked list, searching for the first chunk of free space that is large enough to satisfy the request. Then the procedure passes a pointer to the first address of the block to the process and updates the heap to account for this space being reserved. \\
+
+\begin{algorithm}
+  \caption{The memory request function}
+  \begin{algorithmic}[1]
+    \Procedure{request\_memory\_block}{}
+      \While{heap is full}
+			\State {block the current process}
+	  \EndWhile
+	  \State {update the free space list}
+	  \State {return the address of the top of the block}
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 \subsection{Releasing Memory Blocks}
 
 \textcolor{red}{\textbf{Tyler}} \\
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+int k_release_memory_block(void* memory_block);
+\end{lstlisting}
+\end{minipage}
 
+Releasing memory blocks requires a pointer to a memory block. The procedure focuses on optimally returning the block to the heap list. Then it unblocks the next process waiting for a memory block, if any.
 
+\begin{algorithm}
+  \caption{The memory release function}
+  \begin{algorithmic}[1]
+    \Procedure{release\_memory\_block}{*memory_block}
+      \If{this block is the top block of the heap}
+			\State {modify heap header node (never gets overwritten)}
+	  \EndIf
+	  \If{there is free space immediately beneath this block}
+			\State {combine them by increasing this block's length}
+	  \Else { this block becomes a new block node, is added to the list}
+	  \EndIf
+	  \If{there is free space immediately beneath this block}
+			\State {combine them by increasing this block's length}
+	  \EndIf
+	  \If{a process is blocked on memory}
+			\State {unblock that process, release the processor}
+	  \EndIf
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 
 
@@ -86,7 +139,20 @@
 \subsection{Process Queues}
 
 \textcolor{red}{\textbf{Tyler}} \\
-
+The process queues are implemented to use one queue for all priorities, instead of a separate queue for each priority. Each {\tt PCB} contains a {\tt PCB} pointer, allowing the {\tt PCB}s themselves to be the queue nodes. \\
+By using generic methods that use pointers of pointers as parameters, the same four methods are used for all process queues: \\
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+void enqueue(pcb** targetQueue, pcb* element);
+pcb* dequeue(pcb** targetQueue);
+void remove_queue_node(pcb** targetQueue, pcb* element);
+U32 is_empty(pcb* targetQueue)
+\end{lstlisting}
+\end{minipage}
+The {\tt enqueue} method compares the priorities of each process in the queue and inserts the element beneath all processes of equal value, ensuring FIFO ordering.\\
+{\tt dequeue} simply pops the highest priority element off the front of the queue.\\
+The {\tt remove_queue_node} procedure is used when processes change priority and need to be removed and reinserted back into the queue. This searches the queue for a particular {\tt PCB}, based on process ID.\\
+{\tt is_empty} is purely a helper function for the other three.\\
 
 \subsection{Process Scheduling}
 
@@ -120,7 +186,28 @@ The {\tt k\_get\_process\_priority} primitive is used to get the priority of a p
 \subsection{Set Process Priority}
 
 \textcolor{red}{\textbf{Tyler}} \\
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+int k_set_process_priority(int process_id, int priority);
+\end{lstlisting}
+\end{minipage}
 
+Process priority changing is all done through this method. After checking that the process is allowed to have it's priority change and the priority it is being set to is legal, the priority value is set and the process is removed and re-enqueued to the queue matching the process's current state. The processor is then released to allow for higher priority processes to take over.
+
+\begin{algorithm}
+  \caption{The process priority changing function}
+  \begin{algorithmic}[1]
+    \Procedure{set\_process\_priority}{processID, targetPriority}
+		\If{processID or targetPriority are not legal}
+			\State {return RTX_ERR}
+		\EndIf
+		\State {set processID's priority to targetPriority}
+		\State {determine state}
+		\State {remove queue node}
+		\State {enqueue processID's PCB}
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -134,10 +221,58 @@ The {\tt k\_get\_process\_priority} primitive is used to get the priority of a p
 \subsection{Sending Messages}
 
 \textcolor{red}{\textbf{Tyler}} \\
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+int k_send_message(int process_id, void* message_envelope);
+\end{lstlisting}
+\end{minipage}
+
+Message passing is implemented using a stucture very similar to the process queues. Processes can call this method after creating a typical {\tt message_envelope} containing a message type and a char array of the message's contents. The function call also requires a destination process that will receive this message. {\tt k\_send\_message} is the kernel primitive used to facilitate message sending.\\
+
+The procedure begins by using {\tt message\_new} to create a {\tt message}, our kernel level wrapper for the {\tt message_envelope} containing additional necessary information such as the sender process's ID and the pointer necessary for message queue construction. The {\tt message} is then enqueued on the message queue of the destination process. If the destination process is blocked on receive, we unblock and switch, releasing the processor to determine which process should be running next. \\
+
+\begin{algorithm}
+  \caption{The send message function}
+  \begin{algorithmic}[1]
+    \Procedure{send\_message}{destinationID, message envelope}
+		\State {m = create message object from message envelope}
+		\State {enqueue m on the destination process's message queue}
+      
+		\If{destination process is waiting for a message}
+			\State {move destination process to Ready state}
+			\State {pre-empt the processor, switching to the waiting process}
+		\EndIf
+		\State {return RTX_OK}
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 \subsection{Receiving Messages}
 
 \textcolor{red}{\textbf{Tyler}} \\
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+int k_receive_message(int* sender_id);
+\end{lstlisting}
+\end{minipage}
+
+Each process maintains it's own message queue in the PCB. {\tt k\_receive\_message} is the kernel primitive used to facilitate message receiving. When a process tries to receive a message, first the procedure checks if the message queue is empty. If so, this process becomes blocked on receive and will become unblocked by the send_message procedure. \\
+
+Once a message is in the queue, the procedure dequeues the first message and returns the message envelope data containing the message type and contents. The sender_id pointer parameter is set as the sender_id from the {\tt message} wrapper for the process to cross reference and confirm this is the message it was waiting for. \\
+
+\begin{algorithm}
+  \caption{The receive message function}
+  \begin{algorithmic}[1]
+    \Procedure{receive\_message}{*sender_id}
+      \While{message queue is empty}
+			\State {block this process}
+		\EndWhile
+		\State {m = dequeue the top message}
+		\State {set sender_id as m's sender_id}
+		\State {return m's message_envelope}
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 \subsection{Delayed Send}
 
@@ -379,7 +514,7 @@ The wall clock process relies on memory blocks to send display messages to the C
 
 The {\tt set\_process\_priority()} primitive described earlier can be used to programmatically change the priority of any process that is not a system process. It is, however, a programmatic call that must be set in user code in advance. The Set Priority process allows users to change the priority of a process at runtime using the {\tt \%C} command.\\
 
-The priority change takes effect immediately. If the user enters invalid parameters, "Error" will be printed to the screen and the command will be ignored.\\
+The priority change takes effect immediately. If the user enters invalid parameters, \"Error\" will be printed to the screen and the command will be ignored.\\
 
 \begin{algorithm}
   \caption{The Set Priority Process}
@@ -392,7 +527,7 @@ The priority change takes effect immediately. If the user enters invalid paramet
 			\If {Setting process_id to new_priority is a valid operation}
 				\State \Call{set_process_priority}{process_id}{new_priority}
 			\Else
-				\State {make and send an "Error" message to CRT}
+				\State {make and send an \"Error\" message to CRT}
 			\EndIf
 			\State \Call{release_memory_block}{message}
 		\EndWhile
@@ -410,7 +545,7 @@ Process A waits until it receives a {\tt \%Z} command, after which it will repea
 
 Process B receives messages from A and sends them to Process C.\\
 
-Process C receives messages from Process B. Every 20th message, it prints "Process C" to the screen by modifying B's message and passing it to the CRT. Every 20th message, it will then request a memory block and send itself a delayed {\tt WAKEUP10} message to be received in 10 seconds. During those 10 seconds, it goes into a hibernation state, receiving messages from B and putting them on its local queue, but otherwise not doing anything.\\
+Process C receives messages from Process B. Every 20th message, it prints \"Process C\" to the screen by modifying B's message and passing it to the CRT. Every 20th message, it will then request a memory block and send itself a delayed {\tt WAKEUP10} message to be received in 10 seconds. During those 10 seconds, it goes into a hibernation state, receiving messages from B and putting them on its local queue, but otherwise not doing anything.\\
 
 In general, Process A requests memory blocks and Process C ends up releasing them. If Process C's priority is too low, memory blocks may end up never being released and we may end up in deadlock.\\
 
@@ -458,7 +593,7 @@ With P1 and P2 in particular, we encountered time trouble and needed to use a la
 
 \textcolor{red}{\textbf{Peter}} \\
 
-In order to do timing, a second timer (called "timer 1") was programmed. Whereas timer0 interrupted once every millisecond, timer1 never interrupts and never does anything other than maintain a count. Like timer0, timer1 operated at a speed of 100MHz.\\
+In order to do timing, a second timer (called \"timer 1\") was programmed. Whereas timer0 interrupted once every millisecond, timer1 never interrupts and never does anything other than maintain a count. Like timer0, timer1 operated at a speed of 100MHz.\\
 
 The timer test code was added to the user test processes, with the tests conducted in {\tt proc5()} after all the regular tests had been completed. The three primitives that had their time measured were {\tt k\_request\_memory\_block()}, {\tt k\_send\_message()}, and {\tt k\_receive\_message()}. The test was designed so that there would be no blocking or pre-emption during any of these calls. Each of these functions was called ten times inside a loop and the elapsed time was measured using the timer's {\tt TC} register. By writing certain values to the timer's {\tt TCR} register, we were able to programmatically start, stop, and reset the timer during and between tests.\\
 
