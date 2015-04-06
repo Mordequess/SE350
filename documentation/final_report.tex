@@ -50,19 +50,41 @@
 \chapter{Introduction}
 
 \textcolor{red}{\textbf{Kelly}} \\
+The ruling concept of the RTX detailed here is simplicity. Some of the methods used
+to achieve `simplicity' are unconventional, but the idea of simplicity still holds
+true. The priority queues are implemented as sorted linked lists where high priority
+processes are placed first, the memory heap is implemented in a way that might 
+take a few explanations, and the message-envelope structure may seem unconventional,
+but each part is simple enough and they are separate concerns so that when the RTX
+functions, every part functions together as a whole in a simple and expected way.
 
 \chapter{Design Description}
 
 \section{Global Variables and Structures}
 
 \textcolor{red}{\textbf{Kelly}} \\
+The global variables are structures used in the RTX are primarily for initialization, though
+some are core to its functionality.
+\begin{itemize}
+	\item \texttt{gp_stack}: points to the last allocated stack address, used when allocating process stacks
+	\item \texttt{g_test_procs}: an array of \texttt{PROC_INIT} structs, used for initializing user processes
+	\item \texttt{g_proc_table}: an array of \texttt{PROC_INIT} structs, containing both system and user processes for initialization
+	\item \texttt{gp_pcbs}: the array containing the PCB for every process, used during context switches constantly
+	\item \texttt{gp_current_process}: a pointer to the current process' PCB, also used constantly
+	\item Process Queues: \texttt{g_ready_queue, g_blocked_on_memory_queue, g_blocked_on_receive_queue},
+		the three process queues are global and used constantly as well, to place each process
+		onto the correct queue based on its outstanding requests and messages.
+\end{itemize}
+In terms of global structures, both \texttt{heap_blk} and \texttt{pcb} are global
+and widely used, \texttt{heap_blk} for allocating memory blocks in the heap, and
+\texttt{pcb} for the process control blocks. Both are detailed further on.
 
 \section{Memory Management}
 
 \subsection{Memory Structure}
 
 \textcolor{red}{\textbf{Tyler}} \\
-The \"heap\" that the processes request memory blocks from is maintained as a linked list. The length of the heap is exactly enough space for thirty memory blocks of size 0x80 (128 bytes).\\
+The `heap' that the processes request memory blocks from is maintained as a linked list. The length of the heap is exactly enough space for thirty memory blocks of size 0x80 (128 bytes).\\
 
 Free space nodes keep track of the length of free space following this address and a pointer to the next chunk of unclaimed blocks. These headers are written directly into the blocks as they are returned to the heap. They are free to be overwritten, the only safe header is the starting address of the heap. The heap is shifted by four bytes to protect the last block from ever being overwritten. \\
 
@@ -581,6 +603,21 @@ In general, Process A requests memory blocks and Process C ends up releasing the
 
 \textcolor{red}{\textbf{Kelly}} \\
 
+Process Initialization is comprised of four parts:
+\begin{itemize}
+	\item Process table setup: each process' data (\texttt{m_pid}, \texttt{m_stack_size},
+		\texttt{mpf_start_pc}, \texttt{m_priority}) is entered in \texttt{g_proc_table}
+		for further initialization and housekeeping.
+	\item PCB intialization and stack allocation: the data from \texttt{g_proc_table}
+		is used to populate the PCBs in \texttt{gp_pcbs} and each process is
+		allocated a stack of size \texttt{m_stack_size}.
+	\item PCB enqueueing: every PCB is enqueued in the ready queue, \texttt{g_ready_queue}.
+	\item Messages to set up some processes: processes which register a \texttt{KCD}
+		command often do so as their first action so that the command can be
+		used as soon as possible.
+\end{itemize}
+Once these steps are complete, the scheduler selects the first process to run
+from the ready queue and execution begins.
 
 
 \section{Testing}
