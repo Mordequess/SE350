@@ -274,7 +274,7 @@ int k_set_process_priority(int process_id, int priority);
 \end{lstlisting}
 \end{minipage}
 
-Process priority changing is all done through this method. After checking that the process is allowed to have its priority changed and the priority it is being set to is legal, the priority value is set and the process is removed and re-enqueued to the queue matching the process's current state. The processor is then released to allow for higher priority processes to take over.
+Process priority changing is all done through this method. The procedure checks if the priority level entered is valid (0 to 3 are valid while 4 is reserved) and if the process is allowed to have its priority changed (system procedures cannot be modified). The priority value is set and the process is removed and re-enqueued to the queue matching the process's current state. The processor is then released to allow for higher priority processes to take over.
 
 \begin{algorithm}
   \caption{The process priority changing function}
@@ -360,7 +360,6 @@ The procedure begins by using {\tt message\_new} to create a {\tt message}, our 
     \Procedure{send\_message}{destinationID, message envelope}
 		\State {m = create message object from message envelope}
 		\State {enqueue m on the destination process's message queue}
-      
 		\If{destination process is waiting for a message}
 			\State {move destination process to READY state}
 			\State {pre-empt the processor, switching to the waiting process}
@@ -482,7 +481,7 @@ The uart iprocess sometimes sends messages to the KCD and CRT processes. If this
 
 The i-process's functionality requires it to request memory in order to make messages. In order to prevent the i-process from ever getting blocked, it never requests memory if there is no free space available.\\
 
-When the {\tt \_DEBUG\_HOTKEYS} flag is enabled, a set of characters has special status. When one of the characters below is typed, a message is printed to the screen using uart1. The messages consist of lists of processes, with the process id and priority stated line by line. These characters can be pressed at any time are not counted towards strings used for command-passing.
+When the {\tt \_DEBUG\_HOTKEYS} flag is enabled, a set of characters has special status. When one of the characters below is typed, a message is printed to the screen using uart1. The messages consist of lists of processes, with the process id and priority stated line by line. These characters can be pressed at any time and are not counted towards strings used for command-passing.
 
 \begin{itemize}
 
