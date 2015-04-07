@@ -74,33 +74,39 @@ some are core to its functionality.
 	\item \texttt{g\_proc\_table}: an array of \texttt{PROC\_INIT} structs, containing both system and user processes for initialization
 	\item \texttt{gp\_pcbs}: the array containing the PCB for every process, used during context switches constantly
 	\item \texttt{gp\_current\_process}: a pointer to the current process' PCB, also used constantly
-	\item Process Queues: \texttt{g\_ready\_queue, g\_blocked\_on\_memory\_queue, g_blocked_on_receive_queue},
+	\item Process Queues: \texttt{g\_ready\_queue, g\_blocked\_on\_memory\_queue, g_blocked_on_receive_queue};
 		the three process queues are global and used constantly as well, to place each process
 		onto the correct queue based on its outstanding requests and messages.
 \end{itemize}
 In terms of global structures, both \texttt{heap\_blk} and \texttt{pcb} are global
 and widely used, \texttt{heap\_blk} for allocating memory blocks in the heap, and
-\texttt{pcb} for the process control blocks. Both are detailed further on.
-There are also some global variables used only for the i-processes.
+\texttt{pcb} for the process control blocks. Both are described in detail later in this report.
+There are also some global variables used only for the i-processes and system processes.
 \begin{itemize}
 	\item \texttt{g\_buffer[]}: a buffer to hold text being output
 	\item \texttt{*gp\_buffer}: a pointer to \texttt{g\_buffer} so that it can be easily modified within a function
 	\item \texttt{g\_char\_in}: a variable to hold one character at a time from the UART
 	\item \texttt{g\_char\_out}: a variable to hold one character at a time for output to the CRT
 	\item \texttt{g\_input\_buffer[BUFFER\_SIZE]}: a character array to hold user input
-	\item \texttt{g\_ouptut\_buffer[BUFFER\_SIZE]}:
+	\item \texttt{g\_ouptut\_buffer[BUFFER\_SIZE]}: a character array to hold output
 	\item \texttt{g\_input\_buffer\_index}: an integer to iterate through \texttt{g\_input\_buffer}
 	\item \texttt{g\_output\_buffer\_index}: an integer to iterate through \texttt{g\_output\_buffer}
 	\item \texttt{g\_msg\_uart}: a \texttt{msgbuf} the UART i-process uses to process input
 	\item \texttt{g\_timer\_count}: increments with each clock cycle
-	\item \texttt{g\_timer\_flag}: toggles to 1 when a message is sent, and back to 0 when the timer interrupt is fired
+	\item \texttt{g\_timer\_flag}: flag that determines whether to release processor at the end of a timer interrupt
+\item \texttt{g\_uart\_flag}: flag that determines whether to release processor at the end of a uart interrupt (the alternative is to restore the preceding context)
+\end{itemize}
+Lastly, some of the provided system processes also make use of global variables.
+\begin{itemize}
+\item \texttt{g\_registered\_commands[MAX\_COMMANDS]}: an array that stores all the commands that have been registered with the KCD process. {\tt MAX\_COMMANDS} is a constant that can be configured
+\item \texttt{g\_number\_commands\_registered}: the number of commands registered with the KCD process
 \end{itemize}
 
 \section{Memory Management}
 
 \subsection{Memory Structure}
 
-The `heap' that the processes request memory blocks from is maintained as a linked list. The length of the heap is exactly enough space for thirty memory blocks of size 0x80 (128 bytes).\\
+The `heap' that the processes request memory blocks from is maintained as a linked list. The length of the heap is exactly enough space for thirty memory blocks of size 0x80 (128 bytes). The number of memory blocks can be configured by modifying the {\tt NUM\_BLOCKS} constant.\\
 
 Free space nodes keep track of the length of free space following this address and a pointer to the next chunk of unclaimed blocks. These headers are written directly into the blocks as they are returned to the heap. They are free to be overwritten, the only safe header is the starting address of the heap. The heap is shifted by four bytes to protect the last block from ever being overwritten. \\
 
@@ -122,6 +128,7 @@ int k_request_memory_block(void);
 
 First, the procedure checks if all memory blocks in the system heap have been reserved already. If so, this process becomes blocked and will be unblocked once another process releases one of the memory blocks. \\
 Once a memory block is free the procedure iterates through the free space nodes like a linked list, searching for the first chunk of free space that is large enough to satisfy the request. Then the procedure passes a pointer to the first address of the block to the process and updates the heap to account for this space being reserved. \\
+The return value of this primitive is an address.
 
 \begin{algorithm}
   \caption{The memory request function}
@@ -144,7 +151,9 @@ int k_release_memory_block(void* memory_block);
 \end{lstlisting}
 \end{minipage}
 
-Releasing memory blocks requires a pointer to a memory block. The procedure focuses on optimally returning the block to the heap list. Then it unblocks the next process waiting for a memory block, if any.
+Releasing memory blocks requires a pointer to a memory block. The procedure focuses on optimally returning the block to the heap list. Then it unblocks the next process waiting for a memory block, if any.\\
+
+The integer return value will be {\tt RTX\_OK} (equal to 0) for a successful release and {\tt RTX\_ERR} (equal to -1) if an error occurs.\\
 
 \begin{algorithm}
   \caption{The memory release function}
@@ -176,12 +185,32 @@ Releasing memory blocks requires a pointer to a memory block. The procedure focu
 
 \subsection{Process Control Structures}
 
-The Process Control Block (PCB) is the primary process control structure. It
-contains the \texttt{m_pid}, \texttt{m_priority}, and \texttt{m_state} as integers, and 
-\texttt{mp_sp}, the process' stack pointer, \texttt{mp_next}, a PCB pointer used for our
-process queues, and \texttt{m_queue}, the pointer to that process' message queue.
-This is all of the information necessary for context switching from one process
-to the next. Users cannot view nor modify any process' PCB directly.
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+typedef struct pcb 
+{ 
+	U32 m_pid;
+	U32 m_priority;
+	PROC_STATE_E m_state;
+	U32 *mp_sp;
+	struct pcb *mp_next;  
+	message* m_queue;
+} pcb;
+\end{lstlisting}
+\end{minipage}
+
+The Process Control Block (PCB) is the primary structure used by the OS to manage processes. It has all the information required for switching and scheduling A PCB can never be modified directly by a user process, though a user process may perform actions (such as setting priority) that indirectly cause the PCB to be changed.\\
+
+The PCB consists of the following fields:
+
+\begin{itemize}
+\item \texttt{m_pid}: a unique identifier for the process (0 to 15)
+\item \texttt{m_priority}: a priority ranging from 0 to 4
+\item \texttt{m_state}: the state of the process (one of {\tt NEW}, {\tt READY}, {\tt RUNNING}, {\tt BLOCKED\_ON\_MEMORY}, or {\tt BLOCKED\_ON\_RECEIVE})
+\item \texttt{mp_sp}: the stack pointer
+\item \texttt{mp_next}: a pointer to the process behind this process on whichever process queue it is on
+\item \texttt{m_queue}: a pointer to the message queue
+\end{itemize}
 
 \subsection{Process Queues}
 
@@ -195,16 +224,26 @@ void remove_queue_node(pcb** targetQueue, pcb* element);
 U32 is_empty(pcb* targetQueue);
 \end{lstlisting}
 \end{minipage}
-The {\tt enqueue} method compares the priorities of each process in the queue and inserts the element beneath all processes of equal value, ensuring FIFO ordering.\\
-{\tt dequeue} simply pops the highest priority element off the front of the queue.\\
-The {\tt remove_queue_node} procedure is used when processes change priority and need to be removed and reinserted back into the queue. This searches the queue for a particular {\tt PCB}, based on process ID.\\
-{\tt is_empty} is purely a helper function for the other three.\\
+
+\begin{itemize}
+\item The {\tt enqueue} method compares the priorities of each process in the queue and inserts the element beneath all processes of equal value, ensuring FIFO ordering.
+\item {\tt dequeue} simply pops the highest priority element off the front of the queue.
+\item The {\tt remove\_queue\_node} procedure is used when processes change priority and need to be removed and reinserted back into the queue. This searches the queue for a particular {\tt PCB}, based on process ID.
+\item {\tt is\_empty} is purely a helper function for the other three.
+\end{itemize}
+
+The OS contains three of these queues: one for {\tt READY} processes, one for {\tt BLOCKED\_ON\_MEMORY} processes, and one for {\tt BLOCKED\_ON\_RECEIVE} processes. No process will ever be on more than one of these queues at a time.\\
 
 \subsection{Process Scheduling}
 
-The scheduler is pre-emptive on I/O and inter-process communication.
-The scheduling algorithm itself is very simple: take the process from the top of the ready queue. The ready queue is sorted based on priority and then by order of arrival. The null process is always the last process on the ready queue and it is chosen when there are no ready processes. The enqueuing and dequeueing procedures ensure that the processes are at the correct location, keeping both priority and order in mind. This scheduler does not use a time quantum nor pre-emption on a time quantum.\\
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[language=C, frame=single]
+int k_release_processor(void);
+\end{lstlisting}
+\end{minipage}
 
+The scheduler is pre-emptive on I/O and inter-process communication.
+The scheduling algorithm itself is very simple: take the process from the top of the {\tt READY} queue. The ready queue is sorted based on priority and then by order of arrival. The null process is always the last process on the ready queue and it is chosen when there are no ready processes. The enqueuing and dequeueing procedures ensure that the processes are at the correct location, keeping both priority and order in mind. This scheduler does not use a time quantum nor pre-emption on a time quantum.\\
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -218,7 +257,7 @@ int k_get_process_priority(int process_id);
 \end{lstlisting}
 \end{minipage}
 
-The {\tt k\_get\_process\_priority} primitive is used to get the priority of a process. It takes a process ID as an input parameter. It outputs one of two things:\\
+The {\tt k\_get\_process\_priority} primitive is used to get the priority of a process. It takes a process ID as an input parameter. It outputs one of two things:
 
 \begin{itemize}
 \item The process's {\tt m\_priority} member if the process id is valid
@@ -270,10 +309,20 @@ typedef struct msgbuf {
 \end{lstlisting}
 The \texttt{msgbuf} structure is the general structure that both users and the
 kernel know about. It is typically placed at the start of an allocated memory block
-and contains integer \texttt{mtype} which describes the purpose of the message, be it
-\texttt{KCD_REG} to register a new command type, or \texttt{DEFAULT} for a general
-message, or any other of the defined types. The only other member of the \texttt{msgbuf}
-structure is then \texttt{mbody}, a \texttt{char} array of size 10 to contain the 
+and contains integer \texttt{mtype} which describes the purpose of the message. Processes receiving messages usually check the {\tt mtype} and may ignore the message if it is a type the process is not designed to handle. The OS currently supports seven message types:
+
+\begin{itemize}
+\item {\tt DEFAULT}: the default message type, used to invoke KCD commands
+\item {\tt KCD\_REG}: used to register commands with the KCD process
+\item {\tt KCD\_DISPATCH}: used when the KCD process dispatches a command to another process
+\item {\tt CRT\_DISP}: used to tell the CRT process to display the messge contents
+\item {\tt WALL\_CLOCK\_TICK}: used to send delayed timer tick messages to the wall clock user process
+\item {\tt COUNT\_REPORT}: used by the stress test processes
+\item {\tt WAKEUP10}: used by the stress test processes
+\end{itemize}
+
+The only other member of the \texttt{msgbuf}
+structure is then \texttt{mtext}, a \texttt{char} array of size 10 to contain the 
 message contents. \\
 \begin{lstlisting}[language=C, frame=single]
 typedef struct message {
@@ -290,7 +339,7 @@ a pointer to the \texttt{msgbuf} within the allocated memory block, integers for
 to another message structure \texttt{mp_next} for use in the message queues. \\
 Typically the \texttt{msgbuf} structure is allocated at the start of a memory block,
 and the \texttt{message} structure is allocated in the space right after, still before
-the 64-byte mark.
+the 64-byte mark.\\
 
 
 \subsection{Sending Messages}
@@ -301,7 +350,7 @@ int k_send_message(int process_id, void* message_envelope);
 \end{lstlisting}
 \end{minipage}
 
-Message passing is implemented using a queue stucture very similar to the process queues. Processes can call this method after creating a typical {\tt message_envelope} containing a message type and a char array of the message's contents. The function call also requires a destination process that will receive this message. {\tt k\_send\_message} is the kernel primitive used to facilitate message sending.\\
+Message passing is implemented using a queue stucture very similar to the process queues. Processes can call this method after creating a typical {\tt message\_envelope} containing a message type and a char array of the message's contents (a {\tt msgbuf} pointer). The function call also requires a destination process that will receive this message. {\tt k\_send\_message} is the kernel primitive used to facilitate message sending.\\
 
 The procedure begins by using {\tt message\_new} to create a {\tt message}, our kernel level wrapper for the {\tt message_envelope} containing additional necessary information such as the sender process's ID and the pointer necessary for message queue construction. The {\tt message} is then enqueued on the message queue of the destination process. If the destination process is {\tt BLOCKED\_ON\_RECEIVE}, we unblock and switch, releasing the processor to determine which process should be running next. \\
 
@@ -329,7 +378,7 @@ int k_receive_message(int* sender_id);
 \end{lstlisting}
 \end{minipage}
 
-Each process maintains its own message queue in the PCB. {\tt k\_receive\_message} is the kernel primitive used to facilitate message receiving. When a process tries to receive a message, first the procedure checks if the message queue is empty. If so, this process becomes {\tt BLOCKED\_ON\_RECEIVE} and will become unblocked by the {\tt send\_message} procedure. \\
+Each process maintains its own message queue in the PCB. {\tt k\_receive\_message} is the kernel primitive used to facilitate message receiving. When a process tries to receive a message, first the procedure checks if the message queue is empty. If so, this process becomes {\tt BLOCKED\_ON\_RECEIVE}. It will become unblocked only when another process calls {\tt send\_message} with the blocked process as its destination. \\
 
 Once a message is in the queue, the procedure dequeues the first message and returns the message envelope data containing the message type and contents. The {\tt sender\_id} pointer parameter is set as the {\tt sender\_id} from the {\tt message} wrapper for the process to cross reference and confirm this is the message it was waiting for. \\
 
@@ -431,16 +480,16 @@ The uart iprocess sometimes sends messages to the KCD and CRT processes. If this
   \end{algorithmic}
 \end{algorithm}
 
-The i-process's functionality requires it to request memory in order to make messages. In order to prevent the i-process from ever getting blocked, it never allocates memory if there is no free space available.\\
+The i-process's functionality requires it to request memory in order to make messages. In order to prevent the i-process from ever getting blocked, it never requests memory if there is no free space available.\\
 
-When the {\tt \_DEBUG\_HOTKEYS} flag is enabled, a set of characters has special status. When one of the characters below is typed, a message is printed to the screen using uart1. The messages consist of lists of processes, with the process id and priority stated line by line. These characters can be pressed at any time are not counted towards strings used for command-passing.\\
+When the {\tt \_DEBUG\_HOTKEYS} flag is enabled, a set of characters has special status. When one of the characters below is typed, a message is printed to the screen using uart1. The messages consist of lists of processes, with the process id and priority stated line by line. These characters can be pressed at any time are not counted towards strings used for command-passing.
 
 \begin{itemize}
 
-\item {\tt !} prints the processes on the ready queue\\
-\item {\tt @} prints the processes on the blocked-on-memory queue\\
-\item {\tt \#} prints the processes on the blocked-on-receive queue\\
-\item {\tt \$} prints the process that is currently running\\
+\item {\tt !} prints the processes on the ready queue
+\item {\tt @} prints the processes on the blocked-on-memory queue
+\item {\tt \#} prints the processes on the blocked-on-receive queue
+\item {\tt \$} prints the process that is currently running
 
 \end{itemize}
 
@@ -549,13 +598,13 @@ The CRT process is used to print text to the system console. The process waits f
 
 The wall clock process is used to display the time in 24-hour format. If the clock is on, it will print the time on the screen each second by sending messages to the CRT process. The process maintains second-by-second timing by sending itself delayed messages with a delay of 1000 milliseconds.\\
 
-The wall clock process registers three commands with the KCD when it initializes. By typing commands into the console, the user can control the wall clock's behaviour. When the process launches, the wall clock starts as inactive.\\
+The wall clock process registers three commands with the KCD when it initializes. By typing commands into the console, the user can control the wall clock's behaviour. When the process launches, the wall clock starts as inactive.
 
 \begin{itemize}
 
-\item {\tt \%WR} - Sets the clock time to 00:00:00 and sets the clock to active.\\
-\item {\tt \%WT} - Sets the clock to inactive. Cancels any scheduled future clock ticks.\\
-\item {\tt \%WS hh:mm:ss} - Sets the clock to active with the given time in 24-hour format.\\
+\item {\tt \%WR} - Sets the clock time to 00:00:00 and sets the clock to active.
+\item {\tt \%WT} - Sets the clock to inactive. Cancels any scheduled future clock ticks.
+\item {\tt \%WS hh:mm:ss} - Sets the clock to active with the given time in 24-hour format.
 
 \end{itemize}
 
@@ -608,19 +657,18 @@ In general, Process A requests memory blocks and Process C ends up releasing the
 
 Process Initialization is comprised of four parts:
 \begin{itemize}
+	\item Hardware initialization: the two timers and two uarts are activated. Timer0 and Uart0 are set to support interrupts while Timer1 and Uart1 are not.
+
 	\item Process table setup: each process' data (\texttt{m_pid}, \texttt{m_stack_size},
 		\texttt{mpf_start_pc}, \texttt{m_priority}) is entered in \texttt{g_proc_table}
 		for further initialization and housekeeping.
 	\item PCB intialization and stack allocation: the data from \texttt{g_proc_table}
 		is used to populate the PCBs in \texttt{gp_pcbs} and each process is
-		allocated a stack of size \texttt{m_stack_size}.
-	\item PCB enqueueing: every PCB is enqueued in the ready queue, \texttt{g_ready_queue}.
-	\item Messages to set up some processes: processes which register a \texttt{KCD}
-		command often do so as their first action so that the command can be
-		used as soon as possible.
+		allocated a stack of size \texttt{STACK_SIZE}.
+	\item PCB enqueueing: every process except for the i-processes has its PCB enqueued in the ready queue \texttt{g_ready_queue}.
 \end{itemize}
 Once these steps are complete, the scheduler selects the first process to run
-from the ready queue and execution begins.
+from the ready queue and execution begins.\\
 
 
 \section{Testing}
